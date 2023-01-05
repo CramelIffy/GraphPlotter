@@ -433,16 +433,6 @@ namespace MainProcess
 
             if (readAsVol.Checked) thrustList = SRegressionLine(thrustList);
 
-            maxTime[countGraphs] = timeList[thrustList.IndexOf(thrustList.Max())];
-
-            if (countGraphs > 0 && isAlignMax.Checked)
-            {
-                toolStripStatus.Text = "Aligning the max";
-                Application.DoEvents();
-
-                Parallel.For(0, timeList.Count(), i => timeList[i] += maxTime[0] - maxTime[countGraphs]);
-            }
-
             filteredSignalList = thrustList;
 
             toolStripStatus.Text = "Denoised data generating";
@@ -498,6 +488,16 @@ namespace MainProcess
             {
                 double ignitionTime = timeList[ignitionTimeIndex];
                 Parallel.For(0, timeList.Count(), i => timeList[i] -= ignitionTime);
+            }
+
+            maxTime[countGraphs] = timeList[thrustList.IndexOf(thrustList.Max())];
+
+            if (countGraphs > 0 && isAlignMax.Checked)
+            {
+                toolStripStatus.Text = "Aligning the max";
+                Application.DoEvents();
+
+                Parallel.For(0, timeList.Count(), i => timeList[i] += maxTime[0] - maxTime[countGraphs]);
             }
 
             toolStripStatus.Text = "Graph is plotting";
