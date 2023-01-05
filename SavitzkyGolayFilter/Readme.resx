@@ -1,0 +1,76 @@
+﻿<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="readmeLabel.Text" xml:space="preserve">
+    <value>このプログラムはロケットの推力データを解析及びグラフ化するプログラムです。
+以下に注意点を記します。
+
+1. 1080pモニターで最大化表示した時を基準に作成してるため、その他の状態ではグラフが画面外にはみ出る場合があります。
+2. トータルインパルスの計算に用いるデータはDenoiseにチェックが入っていない時元データを、チェックが入ってる時はデノイズ後のデータを用いて計算します。
+　ここで、デノイズに用いたアルゴリズムはサビツキーゴーレイフィルタです。このフィルタを2回適応しています。このとき、適応一回目は幅17で、二回目は幅9です。
+　どちらも5次関数による近似を用いています。また、ピークプロテクションはトータルインパルスの計算には用いません。
+3. 燃焼開始時刻と燃焼終了時刻が乱れる場合があります。
+
+使い方: 
+1. ファイル選択で時間データ(単位は秒かマイクロ秒)とスラストデータ(単位はニュートンかミリボルト)が記述されたCSVファイルを選んでください。
+2. Plotボタンをクリックすることで描画されます。
+3. 別のデータを更に上から描画したい場合はファイル選択から別のファイルを読み込みPlotボタンを押してください。
+4. グラフ イニシャライゼーション ボタンを押すことで初期化できます。初期化しない限りグラフは重ねて描画されます。</value>
+  </data>
+</root>
