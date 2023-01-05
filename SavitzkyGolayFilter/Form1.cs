@@ -1,7 +1,5 @@
-﻿using MathNet.Numerics;
-using MathNet.Numerics.LinearAlgebra;
+﻿using MathNet.Numerics.LinearAlgebra;
 using ScottPlot;
-using ScottPlot.Plottable;
 using System.Data;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
@@ -555,12 +553,17 @@ namespace MainProcess
 
                 if (burnOutTimeIndex != ignitionTimeIndex)
                     formsPlot1.Plot.AddFill(timeListForFill, thrustListForFill, 0, Color.FromArgb(0x30000000));
+
+                formsPlot1.Plot.YAxis.Label("Thrust [N]");
             }
             else
             {
                 var peakProtectionIntensityGraph = formsPlot1.Plot.AddSignalXY(timeList.ToArray(), peakProtection.ToArray(), label: "peak protection intensity of graph " + countGraphs.ToString());
                 peakProtectionIntensityGraph.YAxisIndex = 1;
                 peakProtectionIntensityGraph.XAxisIndex = 0;
+
+                formsPlot1.Plot.YAxis2.Label("Peak protection intensity");
+                formsPlot1.Plot.YAxis2.Ticks(true);
             }
 
             if (isPlotAverageThrust.Checked && !showPeakProtectionIntensity.Checked)
@@ -679,6 +682,10 @@ namespace MainProcess
 
         private void Init()
         {
+            formsPlot1.Plot.YAxis.Label("");
+            formsPlot1.Plot.YAxis2.Label("");
+            formsPlot1.Plot.YAxis2.Ticks(false);
+
             formsPlot1.Plot.Clear();
             formsPlot1.Refresh();
 
@@ -767,8 +774,9 @@ namespace MainProcess
 
         private void ShowReadme_Click(object sender, EventArgs e)
         {
-            Readme readme = new Readme();
-            readme.Show();
+            var startInfo = new ProcessStartInfo("https://github.com/CramelIffy/GraphPlotter");
+            startInfo.UseShellExecute = true;
+            Process.Start(startInfo);
         }
 
         private void toolStripStatus_Click(object sender, EventArgs e)
@@ -783,13 +791,13 @@ namespace Filtering
     /// <para>Implements a Savitzky-Golay smoothing filter, as found in [1].</para>
     /// <para>[1] Sophocles J.Orfanidis. 1995. Introduction to Signal Processing. Prentice-Hall, Inc., Upper Saddle River, NJ, USA.</para>
     /// </summary>
-    public sealed class SavitzkyGolayFilter
+    internal sealed class SavitzkyGolayFilter
     {
         private readonly int sidePoints;
 
         private Matrix<double> coefficients;
 
-        public SavitzkyGolayFilter(int sidePoints, int polynomialOrder)
+        internal SavitzkyGolayFilter(int sidePoints, int polynomialOrder)
         {
             this.sidePoints = sidePoints;
             Design(polynomialOrder);
@@ -800,7 +808,7 @@ namespace Filtering
         /// </summary>
         /// <param name="samples"></param>
         /// <returns></returns>
-        public double[] Process(double[] samples)
+        internal double[] Process(double[] samples)
         {
             int length = samples.Length;
             double[] output = new double[length];
