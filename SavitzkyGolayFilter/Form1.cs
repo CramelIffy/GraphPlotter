@@ -1,7 +1,10 @@
-﻿using MathNet.Numerics.LinearAlgebra;
+﻿//#define TIMER
+
+using MathNet.Numerics.LinearAlgebra;
 using ScottPlot;
 using System.Data;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
 namespace MainProcess
@@ -25,11 +28,8 @@ namespace MainProcess
         void ReadCsv(string file, uint timeColumn, uint dataColumn, out List<double> timeList, out List<double> dataList, out string error)
         {
             List<string> rawData = new List<string>();
-            List<string> list1 = new List<string>();
-            List<string> list2 = new List<string>();
-
-            timeList = list1.ConvertAll(double.Parse);
-            dataList = list2.ConvertAll(double.Parse);
+            timeList = new List<double>();
+            dataList = new List<double>();
             error = "E000";
 
             try
@@ -41,59 +41,48 @@ namespace MainProcess
                         rawData.Add(reader.ReadLine());
                     }
                 }
-                int numRawData = rawData.Count();
-                list1.AddRange(rawData);
-                list2.AddRange(rawData);
-                bool isAllConverted = true;
-                Parallel.For(0, numRawData, i =>
+
+                var rawDataForLoop = CollectionsMarshal.AsSpan(rawData);
+
+                for (int i = 0; i < rawDataForLoop.Length; i++)
                 {
-                    try
+                    string[] values = rawDataForLoop[i].Split(',');
+                    if ((timeColumn > dataColumn ? timeColumn : dataColumn) > values.Length - 1) error = "E002";
+                    else
                     {
-                        string[] values = rawData[i].Split(',');
-                        list1[i] = values[timeColumn];
-                        list2[i] = values[dataColumn];
-                    }
-                    catch (IndexOutOfRangeException)
-                    {
-                        isAllConverted = false;
-                    }
-                });
-                if (!isAllConverted)
-                {
-                    error = "E002";
-                    if (list1.Count() > list2.Count())
-                    {
-                        while (list1.Count() > list2.Count()) list1.RemoveAt(list1.Count() - 1);
-                    }
-                    else if (list1.Count() < list2.Count())
-                    {
-                        while (list1.Count() < list2.Count()) list2.RemoveAt(list2.Count() - 1);
+                        timeList.Add(Convert.ToDouble(values[timeColumn].Trim()));
+                        dataList.Add(Convert.ToDouble(values[dataColumn].Trim()));
                     }
                 }
             }
-            catch (IOException)
-            {
-                error = "E003";
-            }
-
-            try
-            {
-                timeList = list1.ConvertAll(double.Parse);
-                dataList = list2.ConvertAll(double.Parse);
-            }
             catch (FormatException)
             {
+                timeList = new List<double>();
+                dataList = new List<double>();
+
                 try
                 {
-                    list1.RemoveAt(0);
-                    list2.RemoveAt(0);
-                    timeList = list1.ConvertAll(double.Parse);
-                    dataList = list2.ConvertAll(double.Parse);
+                    var rawDataForLoop = CollectionsMarshal.AsSpan(rawData);
+
+                    for (int i = 1; i < rawDataForLoop.Length; i++)
+                    {
+                        string[] values = rawDataForLoop[i].Split(',');
+                        if ((timeColumn > dataColumn ? timeColumn : dataColumn) > values.Length - 1) error = "E002";
+                        else
+                        {
+                            timeList.Add(Convert.ToDouble(values[timeColumn].Trim()));
+                            dataList.Add(Convert.ToDouble(values[dataColumn].Trim()));
+                        }
+                    }
                 }
                 catch (FormatException)
                 {
                     error = "E001";
                 }
+            }
+            catch (IOException)
+            {
+                error = "E003";
             }
         }
 
@@ -109,29 +98,30 @@ namespace MainProcess
 
         List<double> MovAverage(List<double> data, uint range)
         {
+            List<double> temp = new List<double>();
             List<double> result = new List<double>();
-            int num = data.Count();
-
-            for (int i = 0; i < range - 1; i++) result.Add(0);
+            temp.AddRange(data);
             result.AddRange(data);
-            Parallel.For(0, num, i =>
+
+            for (int i = 0; i < range - 1; i++) temp.Insert(0, 0);
+            Parallel.For(0, temp.Count() - (int)range - 1, i =>
             {
                 double sum = 0;
-                for (int j = 0; j < range; j++) sum += result[i + j];
+                for (int j = 0; j < range; j++) sum += temp[i + j];
                 result[i] = sum / range;
             });
-            result.RemoveRange(num, (int)range - 1);
 
             return result;
         }
 
         List<double> HighpassFilter(List<double> data, uint range)
         {
-            int num = data.Count();
             List<double> temp = MovAverage(data, range);
-            for (int i = 0; i < num; i++) temp[i] = data[i] - temp[i];
+            List<double> result = new List<double>();
 
-            return temp;
+            for (int i = 0; i < data.Count(); i++) result.Add(data[i] - temp[i]);
+
+            return result;
         }
 
         List<double> PeakProtection(List<double> data, List<double> time, uint range, int ignitionTimeIndex)
@@ -139,14 +129,13 @@ namespace MainProcess
             double max;
             List<double> temp = new List<double>();
             temp.AddRange(HighpassFilter(data, range));
-            int num = temp.Count();
-            for (int i = 0; i < num; i++) temp[i] = Math.Abs(temp[i]);
+            for (int i = 0; i < temp.Count(); i++) temp[i] = Math.Abs(temp[i]);
             max = temp.Max();
             double IntensityValue = max / Convert.ToDouble(peakProtectionIntensity.Value.ToString());
 
-            Parallel.For(0, num, i => temp[i] = 1 / (1 + Math.Exp(-(temp[i] - IntensityValue) * 20 / max)));
+            Parallel.For(0, temp.Count(), i => temp[i] = 1 / (1 + Math.Exp(-(temp[i] - IntensityValue) * 20 / max)));
 
-            Parallel.For(ignitionTimeIndex, num, i => temp[i] = temp[i] > 0.5 ? 1.0 : Math.Pow(temp[i] * 2, 4) / 16);
+            Parallel.For(ignitionTimeIndex, temp.Count(), i => temp[i] = temp[i] > 0.5 ? 1.0 : Math.Pow(temp[i] * 2, 4) / 16);
             return temp;
         }
 
@@ -356,7 +345,7 @@ namespace MainProcess
             }
             catch (ArgumentOutOfRangeException)
             {
-                MessageBox.Show("SkipもしくはCutoffで異常が発生しました。\nSkipとCutoffの合計がデータ全体の秒数を超えている可能性が考えられます。\nSkipやCutoffの数値を変更してください。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("SkipもしくはCutoffで異常が発生しました。\nSkipとCutoffの合計がデータ全体の秒数を超えています。\nSkipやCutoffの数値を変更してください。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 toolStripStatus.Text = "ERROR";
                 Application.DoEvents();
                 Init();
@@ -386,6 +375,12 @@ namespace MainProcess
 
         private void Plot_Click(object sender, EventArgs e)
         {
+#if TIMER
+            var sw = new Stopwatch();
+            sw.Start();
+#endif
+
+
             string error;
             int ignitionTimeIndex;
             int burnOutTimeIndex;
@@ -601,13 +596,13 @@ namespace MainProcess
                 return;
             }
 
-            if (countGraphs <= 1 && !isAlignMax.Checked)
-            {
-                SetIgnitionTimeZero.Checked = false;
-                isAlignMax.Checked = true;
-            }
-
             toolStripStatus.Text = "Done";
+
+#if TIMER
+            sw.Stop();
+            MessageBox.Show(((double)sw.ElapsedMilliseconds / 1000).ToString("F3"));
+#endif
+
         }
 
         private void Threshold_Scroll(object sender, EventArgs e)
