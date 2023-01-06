@@ -20,7 +20,7 @@ namespace MainProcess
         uint countGraphs = 0;
         uint countAnnotation = 0;
         uint countBurnTimes = 0;
-        double[] maxTime = new double[100];
+        double[] maxTime = new double[2];
         bool checkBoxWarming = false;
         double graphXLeft = 0;
         double graphXRight = 0;
@@ -41,49 +41,35 @@ namespace MainProcess
                         rawData.Add(reader.ReadLine());
                     }
                 }
-
-                var rawDataForLoop = CollectionsMarshal.AsSpan(rawData);
-
-                for (int i = 0; i < rawDataForLoop.Length; i++)
-                {
-                    string[] values = rawDataForLoop[i].Split(',');
-                    if ((timeColumn > dataColumn ? timeColumn : dataColumn) > values.Length - 1) error = "E002";
-                    else
-                    {
-                        timeList.Add(Convert.ToDouble(values[timeColumn].Trim()));
-                        dataList.Add(Convert.ToDouble(values[dataColumn].Trim()));
-                    }
-                }
-            }
-            catch (FormatException)
-            {
-                timeList = new List<double>();
-                dataList = new List<double>();
-
-                try
-                {
-                    var rawDataForLoop = CollectionsMarshal.AsSpan(rawData);
-
-                    for (int i = 1; i < rawDataForLoop.Length; i++)
-                    {
-                        string[] values = rawDataForLoop[i].Split(',');
-                        if ((timeColumn > dataColumn ? timeColumn : dataColumn) > values.Length - 1) error = "E002";
-                        else
-                        {
-                            timeList.Add(Convert.ToDouble(values[timeColumn].Trim()));
-                            dataList.Add(Convert.ToDouble(values[dataColumn].Trim()));
-                        }
-                    }
-                }
-                catch (FormatException)
-                {
-                    error = "E001";
-                }
             }
             catch (IOException)
             {
                 error = "E003";
+                return;
             }
+
+            var rawDataForLoop = CollectionsMarshal.AsSpan(rawData);
+
+            for (int i = 0; i < rawDataForLoop.Length; i++)
+            {
+                string[] values = rawDataForLoop[i].Split(',');
+
+                if ((timeColumn > dataColumn ? timeColumn : dataColumn) > values.Length - 1)
+                {
+                    if (error != "E002") error = "E002";
+                }
+                else
+                {
+                    double temp = 0;
+                    bool tryParseTime = double.TryParse(values[timeColumn].Trim(), out temp);
+                    if (tryParseTime) timeList.Add(temp);
+                    else if (error != "E001") error = "E001";
+                    if (tryParseTime && double.TryParse(values[dataColumn].Trim(), out temp)) dataList.Add(temp);
+                    else if (error != "E001") error = "E001";
+                }
+            }
+
+            if (timeList.Count() < 1) error = "E004";
         }
 
         double GetImpulse(List<double> timeList, List<double> dataList, int ignitionTimeIndex, int burnOutTimeIndex)
@@ -275,15 +261,19 @@ namespace MainProcess
                 case "E000":
                     break;
                 case "E001":
-                    MessageBox.Show("データが読み込めません。\n数値のみのデータにしてください。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    toolStripStatus.Text = "ERROR";
+                    MessageBox.Show("数値以外のデータが含まれています。\n正しく読み込めない場合があります。", "注意", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     Application.DoEvents();
-                    return;
+                    break;
                 case "E002":
                     MessageBox.Show("読み込んだファイルの行の数とデータの要素数が一致しません。\n正しく読み込めない場合があります。", "注意", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     break;
                 case "E003":
                     MessageBox.Show("ファイルが開けません。\nCalibrationData.csvが同一フォルダ内に無い可能性があります。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    toolStripStatus.Text = "ERROR";
+                    Application.DoEvents();
+                    return;
+                case "E004":
+                    MessageBox.Show("列指定エラー\n存在しない列を指定しています。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     toolStripStatus.Text = "ERROR";
                     Application.DoEvents();
                     return;
@@ -386,7 +376,11 @@ namespace MainProcess
             int burnOutTimeIndex;
             double offset;
 
-            if (fileName == "") return;
+            if (fileName == "")
+            {
+                MessageBox.Show("読み込むファイルを選択してください。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
 
             List<double> timeList = new List<double>();
             List<double> thrustList = new List<double>();
@@ -403,15 +397,19 @@ namespace MainProcess
                 case "E000":
                     break;
                 case "E001":
-                    MessageBox.Show("データが読み込めません。\n数値のみのデータにしてください。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    toolStripStatus.Text = "ERROR";
+                    MessageBox.Show("数値以外のデータが含まれています。\n正しく読み込めない場合があります。", "注意", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     Application.DoEvents();
-                    return;
+                    break;
                 case "E002":
                     MessageBox.Show("読み込んだファイルの行の数とデータの要素数が一致しません。\n正しく読み込めない場合があります。", "注意", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     break;
                 case "E003":
                     MessageBox.Show("ファイルが開けません。別のプロセスによって使用されている可能性があります。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    toolStripStatus.Text = "ERROR";
+                    Application.DoEvents();
+                    return;
+                case "E004":
+                    MessageBox.Show("列指定エラー\n存在しない列を指定しています。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     toolStripStatus.Text = "ERROR";
                     Application.DoEvents();
                     return;
@@ -483,14 +481,15 @@ namespace MainProcess
                 Parallel.For(0, timeList.Count(), i => timeList[i] -= ignitionTime);
             }
 
-            maxTime[countGraphs] = timeList[thrustList.IndexOf(thrustList.Max())];
+            if (countGraphs == 0) maxTime[0] = timeList[thrustList.IndexOf(thrustList.Max())];
+            else maxTime[1] = timeList[thrustList.IndexOf(thrustList.Max())];
 
             if (countGraphs > 0 && isAlignMax.Checked)
             {
                 toolStripStatus.Text = "Aligning the max";
                 Application.DoEvents();
 
-                Parallel.For(0, timeList.Count(), i => timeList[i] += maxTime[0] - maxTime[countGraphs]);
+                Parallel.For(0, timeList.Count(), i => timeList[i] += maxTime[0] - maxTime[1]);
             }
 
             toolStripStatus.Text = "Graph is plotting";
@@ -685,6 +684,7 @@ namespace MainProcess
             formsPlot1.Refresh();
 
             countGraphs = 0;
+            maxTime = new double[2];
             countAnnotation = 0;
             countBurnTimes = 0;
             skipTime.Value = 0;
