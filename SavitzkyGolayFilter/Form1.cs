@@ -4,6 +4,7 @@ using MathNet.Numerics.LinearAlgebra;
 using ScottPlot;
 using System.Data;
 using System.Diagnostics;
+using System.Drawing.Design;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
@@ -60,11 +61,13 @@ namespace MainProcess
                 }
                 else
                 {
-                    double temp = 0;
-                    bool tryParseTime = double.TryParse(values[timeColumn].Trim(), out temp);
-                    if (tryParseTime) timeList.Add(temp);
-                    else if (error != "E001") error = "E001";
-                    if (tryParseTime && double.TryParse(values[dataColumn].Trim(), out temp)) dataList.Add(temp);
+                    double dataTemp;
+                    double timeTemp;
+                    if (double.TryParse(values[timeColumn].Trim(), out timeTemp) && double.TryParse(values[dataColumn].Trim(), out dataTemp))
+                    {
+                        timeList.Add(timeTemp);
+                        dataList.Add(dataTemp);
+                    }
                     else if (error != "E001") error = "E001";
                 }
             }
@@ -127,10 +130,9 @@ namespace MainProcess
 
         double GetOffset(List<double> dataList)
         {
-            double mean = 0;
             int skip = (int)(dataList.Count() * 0.03);
 
-            mean = dataList
+            double mean = dataList
                 .OrderBy(x => x)
                 .Skip(skip)
                 .Take(skip)
@@ -147,17 +149,18 @@ namespace MainProcess
             double offset = 0;
             double thrustMax = thrustList.Max();
             ignitionTimeIndex = 0;
-            burnOutTimeIndex = timeList.Count();
+            burnOutTimeIndex = timeList.Count() - 1;
             int trialCount = 0;
             int count1 = 0;
             int count2 = 0;
             int ignitionTimeIndexTemp = 0;
-            int burnOutTimeIndexTemp = 0;
+            int burnOutTimeIndexTemp = burnOutTimeIndex;
             var timeListTemp = new List<double>();
             var thrustListTemp = new List<double>();
             timeListOut = new List<double>();
             thrustListOut = new List<double>();
             double autoSkipTime = 0;
+            bool[] estimatedResults = new bool[] { false, false };
 
             timeListTemp.AddRange(timeList);
             thrustListTemp.AddRange(thrustList);
@@ -174,13 +177,14 @@ namespace MainProcess
             {
                 Parallel.Invoke(() =>
                 {
-                    for (int i = 0; i < thrustListTemp.Count(); i++)
+                    for (int i = 0; i < thrustListTemp.Count(); i++) //燃焼開始時間推定
                         if (thrustListTemp[i] > (thrustMax - offset) * ignitionThreshold + offset)
                         {
                             count2++;
                             if (count2 > ignitionMargin)
                             {
-                                ignitionTimeIndexTemp = i - ignitionMargin >= 0 ? i - ignitionMargin : 0;
+                                ignitionTimeIndexTemp = i - ignitionMargin;
+                                estimatedResults[0] = true;
                                 break;
                             }
                         }
@@ -190,13 +194,14 @@ namespace MainProcess
                         }
                 }, () =>
                 {
-                    for (int i = thrustListTemp.Count() - 1; i > 0; i--)
+                    for (int i = thrustListTemp.Count() - 1; i >= 0; i--) //燃焼終了時間推定
                         if (thrustListTemp[i] > (thrustMax - offset) * burnOutThreshold + offset)
                         {
                             count1++;
                             if (count1 > burnOutMargin)
                             {
-                                burnOutTimeIndexTemp = i + burnOutMargin < thrustListTemp.Count() ? i + burnOutMargin : thrustListTemp.Count() - 1;
+                                burnOutTimeIndexTemp = i + burnOutMargin;
+                                estimatedResults[1] = true;
                                 break;
                             }
                         }
@@ -205,11 +210,12 @@ namespace MainProcess
                             count1 = 0;
                         }
                 });
-                if (ignitionTimeIndexTemp < burnOutTimeIndexTemp) break;
+                if (ignitionTimeIndexTemp < burnOutTimeIndexTemp && estimatedResults[0] && estimatedResults[1]) break;
                 else
-                {
+                { //うまく推定できなかった時の処理(推定プログラムの原理上、スラストデータの最大値付近のデータが原因に成りやすい。よって、そこら変のデータをスキップする)
                     if (trialCount == 0)
-                    {
+                    { //最大値手前0.5秒までのデータを削除
+                        error = "E012";
                         double beforeMax = Math.Floor((timeListTemp[thrustListTemp.IndexOf(thrustMax)] - timeListTemp.Min() - 0.5) * 10) * 0.1;
                         beforeMax = beforeMax < 0 ? 0 : beforeMax;
                         DataCropping(timeListTemp, thrustListTemp, out timeListTemp, out thrustListTemp, beforeMax, 0.0);
@@ -222,8 +228,7 @@ namespace MainProcess
                         trialCount++;
                     }
                     else
-                    {
-                        error = "E012";
+                    { //上記の処理でもうまくいかなかった場合0.1秒ずつスキップしていく
                         DataCropping(timeListTemp, thrustListTemp, out timeListTemp, out thrustListTemp, 0.1, 0.0);
                         autoSkipTime += 0.1;
                         skipTime.Value = (decimal)autoSkipTime * 1000;
@@ -235,10 +240,7 @@ namespace MainProcess
                     }
                 }
             }
-            if (timeListTemp.Max() - timeListTemp.Min() <= autoSkipTime)
-            {
-                error = "E013";
-            }
+            if (timeListTemp.Max() - timeListTemp.Min() <= autoSkipTime) error = "E013";
 
             ignitionTimeIndex = ignitionTimeIndexTemp;
             burnOutTimeIndex = burnOutTimeIndexTemp;
