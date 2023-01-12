@@ -177,8 +177,9 @@ namespace MainProcess
             {
                 Parallel.Invoke(() =>
                 {
+                    double threshold = (thrustMax - offset) * ignitionThreshold + offset;
                     for (int i = 0; i < thrustListTemp.Count(); i++) //燃焼開始時間推定
-                        if (thrustListTemp[i] > (thrustMax - offset) * ignitionThreshold + offset)
+                        if (thrustListTemp[i] > threshold)
                         {
                             count2++;
                             if (count2 > ignitionMargin)
@@ -190,12 +191,14 @@ namespace MainProcess
                         }
                         else
                         {
-                            count2 = 0;
+                            if (count2 != 0)
+                                count2 = 0;
                         }
                 }, () =>
                 {
+                    double threshold = (thrustMax - offset) * burnOutThreshold + offset;
                     for (int i = thrustListTemp.Count() - 1; i >= 0; i--) //燃焼終了時間推定
-                        if (thrustListTemp[i] > (thrustMax - offset) * burnOutThreshold + offset)
+                        if (thrustListTemp[i] > threshold)
                         {
                             count1++;
                             if (count1 > burnOutMargin)
@@ -207,7 +210,8 @@ namespace MainProcess
                         }
                         else
                         {
-                            count1 = 0;
+                            if (count1 != 0)
+                                count1 = 0;
                         }
                 });
                 if (ignitionTimeIndexTemp < burnOutTimeIndexTemp && estimatedResults[0] && estimatedResults[1]) break;
