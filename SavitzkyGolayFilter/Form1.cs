@@ -579,7 +579,7 @@ namespace MainProcess
 
             if (isPlotAverageThrust.Checked && !showPeakProtectionIntensity.Checked)
             {
-                double averageThrust = GetAverage(thrustList, ignitionTimeIndex, burnOutTimeIndex);
+                double averageThrust = GetAverage(unfilteredSignalList, ignitionTimeIndex, burnOutTimeIndex);
 
                 var averageThrustLine = formsPlot1.Plot.AddHorizontalLine(averageThrust);
                 averageThrustLine.LineWidth = 1;
