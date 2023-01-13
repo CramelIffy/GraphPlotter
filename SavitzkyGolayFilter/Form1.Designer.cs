@@ -92,8 +92,6 @@
             // 
             this.denoise.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.denoise.AutoSize = true;
-            this.denoise.Checked = true;
-            this.denoise.CheckState = System.Windows.Forms.CheckState.Checked;
             this.denoise.Location = new System.Drawing.Point(1677, 268);
             this.denoise.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.denoise.Name = "denoise";
@@ -139,7 +137,6 @@
             this.peakProtectionIntensity.Name = "peakProtectionIntensity";
             this.peakProtectionIntensity.Size = new System.Drawing.Size(286, 69);
             this.peakProtectionIntensity.TabIndex = 4;
-            this.peakProtectionIntensity.Value = 8;
             this.peakProtectionIntensity.Scroll += new System.EventHandler(this.Threshold_Scroll);
             // 
             // label1
@@ -163,7 +160,7 @@
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(35, 21);
             this.label2.TabIndex = 6;
-            this.label2.Text = "4.0";
+            this.label2.Text = "0.0";
             // 
             // selectFile
             // 

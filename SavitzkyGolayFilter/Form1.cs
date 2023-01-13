@@ -5,6 +5,7 @@ using ScottPlot;
 using System.Data;
 using System.Diagnostics;
 using System.Drawing.Design;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
@@ -113,7 +114,7 @@ namespace MainProcess
             return result;
         }
 
-        List<double> PeakProtection(List<double> data, List<double> time, uint range, int ignitionTimeIndex)
+        List<double> PeakProtection(List<double> data, uint range, int ignitionTimeIndex)
         {
             double max;
             List<double> temp = new List<double>();
@@ -217,30 +218,33 @@ namespace MainProcess
                 if (ignitionTimeIndexTemp < burnOutTimeIndexTemp && estimatedResults[0] && estimatedResults[1]) break;
                 else
                 { //うまく推定できなかった時の処理(推定プログラムの原理上、スラストデータの最大値付近のデータが原因に成りやすい。よって、そこら変のデータをスキップする)
-                    if (trialCount == 0)
-                    { //最大値手前0.5秒までのデータを削除
-                        error = "E012";
-                        double beforeMax = Math.Floor((timeListTemp[thrustListTemp.IndexOf(thrustMax)] - timeListTemp.Min() - 0.5) * 10) * 0.1;
-                        beforeMax = beforeMax < 0 ? 0 : beforeMax;
-                        DataCropping(timeListTemp, thrustListTemp, out timeListTemp, out thrustListTemp, beforeMax, 0.0);
-                        autoSkipTime = beforeMax;
-                        skipTime.Value = (decimal)autoSkipTime * 1000;
-                        skipTime.Refresh();
-                        thrustMax = thrustListTemp.Max();
-                        count1 = 0;
-                        count2 = 0;
-                        trialCount++;
-                    }
-                    else
-                    { //上記の処理でもうまくいかなかった場合0.1秒ずつスキップしていく
-                        DataCropping(timeListTemp, thrustListTemp, out timeListTemp, out thrustListTemp, 0.1, 0.0);
-                        autoSkipTime += 0.1;
-                        skipTime.Value = (decimal)autoSkipTime * 1000;
-                        skipTime.Refresh();
-                        thrustMax = thrustListTemp.Max();
-                        count1 = 0;
-                        count2 = 0;
-                        trialCount++;
+                    double beforeThrustMax = thrustMax;
+                    while (beforeThrustMax == thrustMax)
+                    {
+                        beforeThrustMax = thrustMax;
+                        if (trialCount == 0)
+                        {
+                            error = "E012";
+                            double floorMaxTime = Math.Floor((timeListTemp[thrustListTemp.IndexOf(thrustMax)] - timeListTemp.Min()) * 100) * 0.01;
+                            DataCropping(timeListTemp, thrustListTemp, out timeListTemp, out thrustListTemp, floorMaxTime, 0.0);
+                            autoSkipTime = floorMaxTime;
+                            skipTime.Value = (decimal)autoSkipTime * 1000;
+                            skipTime.Refresh();
+                            thrustMax = thrustListTemp.Max();
+                            count1 = 0;
+                            count2 = 0;
+                            trialCount++;
+                        }
+                        else
+                        { //上記の処理でもうまくいかなかった場合0.01秒ずつスキップしていく
+                            DataCropping(timeListTemp, thrustListTemp, out timeListTemp, out thrustListTemp, 0.01, 0.0);
+                            autoSkipTime += 0.01;
+                            skipTime.Value = (decimal)autoSkipTime * 1000;
+                            skipTime.Refresh();
+                            thrustMax = thrustListTemp.Max();
+                            count1 = 0;
+                            count2 = 0;
+                        }
                     }
                 }
             }
@@ -376,6 +380,7 @@ namespace MainProcess
             sw.Start();
 #endif
 
+            RESTART:
 
             string error;
             int ignitionTimeIndex;
@@ -391,6 +396,7 @@ namespace MainProcess
             List<double> timeList = new List<double>();
             List<double> thrustList = new List<double>();
             List<double> filteredSignalList = new List<double>();
+            List<double> unfilteredSignalList = new List<double>();
             List<double> peakProtection = new List<double>();
 
             toolStripStatus.Text = "File loading";
@@ -435,11 +441,8 @@ namespace MainProcess
             toolStripStatus.Text = "Denoised data generating";
             Application.DoEvents();
 
-            for (int j = 2; j >= 1; j--)
-            {
-                var filteredSignal = new Filtering.SavitzkyGolayFilter(j * 8 + 1, 5).Process(filteredSignalList.ToArray());
-                filteredSignalList = filteredSignal.ToList();
-            }
+            var filteredSignal = new Filtering.SavitzkyGolayFilter(21, 4).Process(filteredSignalList.ToArray());
+            filteredSignalList = filteredSignal.ToList();
 
             offset = GetOffset(filteredSignalList);
 
@@ -471,8 +474,10 @@ namespace MainProcess
                     MessageBox.Show("燃焼開始前、燃焼終了後のデータのいずれかもしくはその両方が規定より少なすぎます。\n燃焼時間の推定に失敗した恐れがあります。\n燃焼時間の推定に失敗する可能性があります。", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     break;
                 case "E012":
+                    toolStripStatus.Text = "Data skip time estimation complete. Rerun.";
+                    Application.DoEvents();
                     MessageBox.Show("燃焼時間の推定に失敗したため、データの序盤をスキップしました。\nグラフの描画に失敗した恐れがあります。\n燃焼時間の推定に失敗する場合は、SkipやCut offの値を調整してください。", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    break;
+                    goto RESTART;
                 case "E013":
                     MessageBox.Show("燃焼時間の推定に失敗しました。\nデータの一部に異常が存在する可能性があります。\nSkipやCutoffの数値を調整して異常部分を回避してください。", "警告", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     toolStripStatus.Text = "ERROR";
@@ -510,14 +515,16 @@ namespace MainProcess
                 maxMarker.TextFont.Size = 28;
             }
 
-            peakProtection = PeakProtection(filteredSignalList, timeList, 80, ignitionTimeIndex);
+            peakProtection = PeakProtection(filteredSignalList, 80, ignitionTimeIndex);
+
+            unfilteredSignalList.AddRange(thrustList);
 
             if (denoise.Checked)
                 Parallel.For(0, thrustList.Count(), i => thrustList[i] = thrustList[i] * peakProtection[i] + filteredSignalList[i] * (1 - peakProtection[i]));
 
             if (isPlotImpulse.Checked && !showPeakProtectionIntensity.Checked)
             {
-                var impulseAno = formsPlot1.Plot.AddAnnotation("Total Impulse of Graph " + countGraphs.ToString() + " = " + GetImpulse(timeList, denoise.Checked ? filteredSignalList : thrustList, ignitionTimeIndex, burnOutTimeIndex).ToString("F3") + " N⋅s", -10, 10 + 50 * countAnnotation);
+                var impulseAno = formsPlot1.Plot.AddAnnotation("Total Impulse of Graph " + countGraphs.ToString() + " = " + GetImpulse(timeList, unfilteredSignalList, ignitionTimeIndex, burnOutTimeIndex).ToString("F3") + " N⋅s", -10, 10 + 50 * countAnnotation);
                 impulseAno.Font.Size = 28;
                 impulseAno.BackgroundColor = Color.FromArgb(25, Color.Black);
                 impulseAno.Shadow = false;
@@ -531,6 +538,22 @@ namespace MainProcess
                 var burnTimeAno = formsPlot1.Plot.AddBracket(timeList[ignitionTimeIndex], -margin, timeList[burnOutTimeIndex], -margin, "Burn Time of Graph " + countGraphs.ToString() + ": " + (timeList[burnOutTimeIndex] - timeList[ignitionTimeIndex]).ToString("F2") + " s");
                 burnTimeAno.Font.Size = 22;
 
+                if (countGraphs == 0)
+                {
+                    var timeListForFill = timeList
+                        .Skip(ignitionTimeIndex)
+                        .Take(burnOutTimeIndex - ignitionTimeIndex)
+                        .ToArray();
+
+                    var thrustListForFill = thrustList
+                        .Skip(ignitionTimeIndex)
+                        .Take(burnOutTimeIndex - ignitionTimeIndex)
+                        .ToArray();
+
+                    if (burnOutTimeIndex != ignitionTimeIndex)
+                        formsPlot1.Plot.AddFill(timeListForFill, thrustListForFill, 0, Color.FromArgb(0x30000000));
+                }
+
                 countBurnTimes++;
             }
 
@@ -539,20 +562,8 @@ namespace MainProcess
             if (!showPeakProtectionIntensity.Checked)
             {
                 var graph = formsPlot1.Plot.AddSignalXY(timeList.ToArray(), thrustList.ToArray(), label: "graph " + countGraphs.ToString());
+                graph.LineWidth = 3;
                 graphColor = graph.LineColor;
-
-                var timeListForFill = timeList
-                    .Skip(ignitionTimeIndex)
-                    .Take(burnOutTimeIndex - ignitionTimeIndex)
-                    .ToArray();
-
-                var thrustListForFill = thrustList
-                    .Skip(ignitionTimeIndex)
-                    .Take(burnOutTimeIndex - ignitionTimeIndex)
-                    .ToArray();
-
-                if (burnOutTimeIndex != ignitionTimeIndex)
-                    formsPlot1.Plot.AddFill(timeListForFill, thrustListForFill, 0, Color.FromArgb(0x30000000));
 
                 formsPlot1.Plot.YAxis.Label("Thrust [N]");
             }
