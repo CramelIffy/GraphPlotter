@@ -4,8 +4,6 @@ using MathNet.Numerics.LinearAlgebra;
 using ScottPlot;
 using System.Data;
 using System.Diagnostics;
-using System.Drawing.Design;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
@@ -19,6 +17,7 @@ namespace MainProcess
         }
 
         string fileName = "";
+        string previousFileName = "";
         uint countGraphs = 0;
         uint countAnnotation = 0;
         uint countBurnTimes = 0;
@@ -38,10 +37,8 @@ namespace MainProcess
             {
                 using (StreamReader reader = new StreamReader(file))
                 {
-                    while (!reader.EndOfStream)
-                    {
-                        rawData.Add(reader.ReadLine());
-                    }
+                    string data = reader.ReadToEnd();
+                    rawData = data.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList();
                 }
             }
             catch (IOException)
@@ -88,10 +85,8 @@ namespace MainProcess
 
         List<double> MovAverage(List<double> data, uint range)
         {
-            List<double> temp = new List<double>();
-            List<double> result = new List<double>();
-            temp.AddRange(data);
-            result.AddRange(data);
+            List<double> temp = new List<double>(data);
+            List<double> result = new List<double>(data);
 
             for (int i = 0; i < range - 1; i++) temp.Insert(0, 0);
             Parallel.For(0, temp.Count() - (int)range - 1, i =>
@@ -156,15 +151,12 @@ namespace MainProcess
             int count2 = 0;
             int ignitionTimeIndexTemp = 0;
             int burnOutTimeIndexTemp = burnOutTimeIndex;
-            var timeListTemp = new List<double>();
-            var thrustListTemp = new List<double>();
+            var timeListTemp = new List<double>(timeList);
+            var thrustListTemp = new List<double>(thrustList);
             timeListOut = new List<double>();
             thrustListOut = new List<double>();
             double autoSkipTime = 0;
             bool[] estimatedResults = new bool[] { false, false };
-
-            timeListTemp.AddRange(timeList);
-            thrustListTemp.AddRange(thrustList);
 
             if (ignitionMargin + burnOutMargin >= thrustListTemp.Count())
             {
@@ -380,7 +372,7 @@ namespace MainProcess
             sw.Start();
 #endif
 
-            RESTART:
+        RESTART:
 
             string error;
             int ignitionTimeIndex;
@@ -451,11 +443,8 @@ namespace MainProcess
                 toolStripStatus.Text = "Deoffsetting";
                 Application.DoEvents();
 
-                Parallel.For(0, thrustList.Count(), i =>
-                {
-                    thrustList[i] -= offset;
-                    filteredSignalList[i] -= offset;
-                });
+                thrustList = thrustList.Select(i => i - offset).ToList();
+                filteredSignalList = filteredSignalList.Select(i => i - offset).ToList();
 
                 offset = 0;
             }
@@ -489,7 +478,7 @@ namespace MainProcess
             if (SetIgnitionTimeZero.Checked)
             {
                 double ignitionTime = timeList[ignitionTimeIndex];
-                Parallel.For(0, timeList.Count(), i => timeList[i] -= ignitionTime);
+                timeList = timeList.Select(i => i - ignitionTime).ToList();
             }
 
             if (countGraphs == 0) maxTime[0] = timeList[thrustList.IndexOf(thrustList.Max())];
@@ -500,13 +489,13 @@ namespace MainProcess
                 toolStripStatus.Text = "Aligning the max";
                 Application.DoEvents();
 
-                Parallel.For(0, timeList.Count(), i => timeList[i] += maxTime[0] - maxTime[1]);
+                timeList = timeList.Select(i => i + maxTime[0] - maxTime[1]).ToList();
             }
 
             toolStripStatus.Text = "Graph is plotting";
             Application.DoEvents();
 
-            if (isPlotMax.Checked && !showPeakProtectionIntensity.Checked)
+            if (isPlotMax.Checked && !showPeakProtectionIntensity.Checked && previousFileName != fileName)
             {
                 var maxMarker = formsPlot1.Plot.AddMarker(timeList[thrustList.IndexOf(thrustList.Max())], thrustList.Max(), MarkerShape.filledCircle, 5, Color.Red);
                 maxMarker.Text = "Max: " + thrustList.Max().ToString("F3") + " N";
@@ -522,7 +511,7 @@ namespace MainProcess
             if (denoise.Checked)
                 Parallel.For(0, thrustList.Count(), i => thrustList[i] = thrustList[i] * peakProtection[i] + filteredSignalList[i] * (1 - peakProtection[i]));
 
-            if (isPlotImpulse.Checked && !showPeakProtectionIntensity.Checked)
+            if (isPlotImpulse.Checked && !showPeakProtectionIntensity.Checked && previousFileName != fileName)
             {
                 var impulseAno = formsPlot1.Plot.AddAnnotation("Total Impulse of Graph " + countGraphs.ToString() + " = " + GetImpulse(timeList, unfilteredSignalList, ignitionTimeIndex, burnOutTimeIndex).ToString("F3") + " N⋅s", -10, 10 + 50 * countAnnotation);
                 impulseAno.Font.Size = 28;
@@ -532,7 +521,7 @@ namespace MainProcess
                 countAnnotation++;
             }
 
-            if (isPlotBurnTime.Checked && !showPeakProtectionIntensity.Checked)
+            if (isPlotBurnTime.Checked && !showPeakProtectionIntensity.Checked && previousFileName != fileName)
             {
                 double margin = (thrustList.Max() - offset) * 0.06 * countBurnTimes;
                 var burnTimeAno = formsPlot1.Plot.AddBracket(timeList[ignitionTimeIndex], -margin, timeList[burnOutTimeIndex], -margin, "Burn Time of Graph " + countGraphs.ToString() + ": " + (timeList[burnOutTimeIndex] - timeList[ignitionTimeIndex]).ToString("F2") + " s");
@@ -577,7 +566,7 @@ namespace MainProcess
                 formsPlot1.Plot.YAxis2.Ticks(true);
             }
 
-            if (isPlotAverageThrust.Checked && !showPeakProtectionIntensity.Checked)
+            if (isPlotAverageThrust.Checked && !showPeakProtectionIntensity.Checked && previousFileName != fileName)
             {
                 double averageThrust = GetAverage(unfilteredSignalList, ignitionTimeIndex, burnOutTimeIndex);
 
@@ -612,13 +601,14 @@ namespace MainProcess
                 return;
             }
 
+            previousFileName = fileName;
+
             toolStripStatus.Text = "Done";
 
 #if TIMER
             sw.Stop();
             MessageBox.Show(((double)sw.ElapsedMilliseconds / 1000).ToString("F3"));
 #endif
-
         }
 
         private void Threshold_Scroll(object sender, EventArgs e)
@@ -825,31 +815,64 @@ namespace Filtering
             int length = samples.Length;
             double[] output = new double[length];
             int frameSize = (sidePoints << 1) + 1;
-            double[] frame = new double[frameSize];
-
-            Array.Copy(samples, frame, frameSize);
 
             Parallel.Invoke(() =>
             {
+                double[] frame = new double[frameSize];
+                Array.Copy(samples, frame, frameSize);
+
                 for (int i = 0; i < sidePoints; ++i)
                 {
                     output[i] = coefficients.Column(i).DotProduct(Vector<double>.Build.DenseOfArray(frame));
                 }
             }, () =>
             {
+                int loopCount = length - ((sidePoints + 1) << 1);
+                int threadCount = Environment.ProcessorCount;
+                int chunkSize = loopCount / threadCount;
+
+                List<Task> tasks = new List<Task>();
+
+                for (int i = 0; i < threadCount; i++)
+                {
+                    int startIndex = i * chunkSize;
+                    int endIndex = (i + 1) * chunkSize;
+                    if (i == threadCount - 1)
+                    {
+                        endIndex = loopCount;
+                    }
+
+                    var task = Task.Run(() =>
+                    {
+                        double[] frame = new double[frameSize];
+                        for (int n = startIndex + sidePoints; n < endIndex + sidePoints; n++)
+                        {
+                            Array.ConstrainedCopy(samples, n - sidePoints, frame, 0, frameSize);
+                            output[n] = coefficients.Column(sidePoints).DotProduct(Vector<double>.Build.DenseOfArray(frame));
+                        }
+                    });
+                    tasks.Add(task);
+                }
+
+                Task.WaitAll(tasks.ToArray());
+                /*
+                //上記プログラムは下記プログラムを並列処理化したもの
                 for (int n = sidePoints; n < length - sidePoints; ++n)
                 {
                     Array.ConstrainedCopy(samples, n - sidePoints, frame, 0, frameSize);
                     output[n] = coefficients.Column(sidePoints).DotProduct(Vector<double>.Build.DenseOfArray(frame));
                 }
-            });
-
-            Array.ConstrainedCopy(samples, length - frameSize, frame, 0, frameSize);
-
-            for (int i = 0; i < sidePoints; ++i)
+                */
+            }, () =>
             {
-                output[length - sidePoints + i] = coefficients.Column(sidePoints + 1 + i).DotProduct(Vector<double>.Build.Dense(frame));
-            }
+                double[] frame = new double[frameSize];
+                Array.ConstrainedCopy(samples, length - frameSize, frame, 0, frameSize);
+
+                for (int i = 0; i < sidePoints; ++i)
+                {
+                    output[length - sidePoints + i] = coefficients.Column(sidePoints + 1 + i).DotProduct(Vector<double>.Build.Dense(frame));
+                }
+            });
 
             return output;
         }
