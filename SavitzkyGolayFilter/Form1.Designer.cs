@@ -551,7 +551,7 @@
             this.toolStripStatus.Name = "toolStripStatus";
             this.toolStripStatus.Size = new System.Drawing.Size(80, 21);
             this.toolStripStatus.Text = "Standby";
-            this.toolStripStatus.Click += new System.EventHandler(this.toolStripStatus_Click);
+            this.toolStripStatus.Click += new System.EventHandler(this.ToolStripStatus_Click);
             // 
             // isPlotAverageThrust
             // 
