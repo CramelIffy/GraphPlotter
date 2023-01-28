@@ -2,7 +2,7 @@
 {
     public partial class GraphName : Form
     {
-        internal string value;
+        internal string value = "";
 
         public GraphName()
         {
@@ -11,15 +11,21 @@
 
         private void GraphName_Load(object sender, EventArgs e)
         {
-
+            KeyPreview = true;
+            KeyDown += new KeyEventHandler(GraphName_KeyDown);
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void Button1_Click(object sender, EventArgs e)
         {
             value = textBox1.Text;
-            if (value != "")
-                Close();
-            else MessageBox.Show("グラフの名前を入力してください。", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+
+        private void GraphName_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                button1.PerformClick();
+            }
         }
     }
 }

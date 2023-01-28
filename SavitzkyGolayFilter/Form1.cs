@@ -355,6 +355,14 @@ namespace MainProcess
             formsPlot1.Plot.XAxis.MajorGrid(true, lineWidth: 2);
             formsPlot1.Plot.XAxis.MinorGrid(true);
             formsPlot1.Plot.YAxis.MajorGrid(true, lineWidth: 2);
+
+            var impulseAno = formsPlot1.Plot.AddAnnotation("Total Impulse", -10, 10 + 50 * countAnnotation);
+            impulseAno.Font.Size = 28;
+            impulseAno.BackgroundColor = Color.FromArgb(25, Color.Black);
+            impulseAno.Shadow = false;
+
+            countAnnotation++;
+
             formsPlot1.Refresh();
 
             toolStripStatus.Text = "Standby";
@@ -419,6 +427,9 @@ namespace MainProcess
             {
                 if (timeList.Where((x, i) => x < timeList[i - 1 < 0 ? 0 : i - 1]).Any())//時間データが昇順になっていない時の処理
                 {
+                    toolStripStatus.Text = "Retrograde time data";
+                    Application.DoEvents();
+
                     if (MessageBox.Show("一部で時間が逆行しています。ソートして読み込みますか？", "注意", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.No)
                     {
                         Init();
@@ -434,7 +445,7 @@ namespace MainProcess
                 }
                 if (timeList.Where((x, i) => x == timeList[i - 1 < 0 ? i + 1 : i - 1]).Any())//時間データが重複している時の処理
                 {
-                    toolStripStatus.Text = "WARNING";
+                    toolStripStatus.Text = "Duplicate time data";
                     Application.DoEvents();
 
                     var sameTimeLine = new List<int>();
@@ -545,6 +556,8 @@ namespace MainProcess
                 {
                     DialogResult dr = fs.ShowDialog();
                     graphTitle = fs.value;
+                    if (graphTitle == "")
+                        MessageBox.Show("グラフの名前を入力してください。", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
 
                 fs.Dispose();
@@ -552,7 +565,7 @@ namespace MainProcess
                 if (isPlotMax.Checked && !showPeakProtectionIntensity.Checked)
                 {
                     var maxMarker = formsPlot1.Plot.AddMarker(timeWhenThrustMax, thrustMax, MarkerShape.filledCircle, 5, Color.Red);
-                    maxMarker.Text = "Max: " + thrustList.Max().ToString("F3") + " N";
+                    maxMarker.Text = "Max(" + graphTitle + "): " + thrustList.Max().ToString("F3") + " N";
                     maxMarker.TextFont.Color = Color.Black;
                     maxMarker.TextFont.Alignment = Alignment.MiddleLeft;
                     maxMarker.TextFont.Size = 28;
@@ -560,7 +573,7 @@ namespace MainProcess
 
                 if (isPlotImpulse.Checked && !showPeakProtectionIntensity.Checked)
                 {
-                    var impulseAno = formsPlot1.Plot.AddAnnotation("Total Impulse of The " + graphTitle + " = " + GetImpulse(timeList, unfilteredSignalList, ignitionTimeIndex, burnOutTimeIndex).ToString("F3") + " N⋅s", -10, 10 + 50 * countAnnotation);
+                    var impulseAno = formsPlot1.Plot.AddAnnotation(graphTitle + ": " + GetImpulse(timeList, unfilteredSignalList, ignitionTimeIndex, burnOutTimeIndex).ToString("F3") + " N⋅s", -10, 10 + 50 * countAnnotation);
                     impulseAno.Font.Size = 28;
                     impulseAno.BackgroundColor = Color.FromArgb(25, Color.Black);
                     impulseAno.Shadow = false;
@@ -608,7 +621,7 @@ namespace MainProcess
                 if (isPlotBurnTime.Checked && !showPeakProtectionIntensity.Checked)
                 {
                     double margin = (thrustList.Max() - offset) * 0.06 * countBurnTimes;
-                    var burnTimeAno = formsPlot1.Plot.AddBracket(timeList[ignitionTimeIndex], -margin, timeList[burnOutTimeIndex], -margin, "Burn Time of The " + graphTitle + ": " + (timeList[burnOutTimeIndex] - timeList[ignitionTimeIndex]).ToString("F2") + " s");
+                    var burnTimeAno = formsPlot1.Plot.AddBracket(timeList[ignitionTimeIndex], -margin, timeList[burnOutTimeIndex], -margin, graphTitle + ": " + (timeList[burnOutTimeIndex] - timeList[ignitionTimeIndex]).ToString("F2") + " s");
                     burnTimeAno.Font.Size = 22;
 
                     if (countGraphs == 0)
