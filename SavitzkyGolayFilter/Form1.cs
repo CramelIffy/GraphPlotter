@@ -3,10 +3,8 @@
 using GraphPlotter;
 using MathNet.Numerics.LinearAlgebra;
 using ScottPlot;
-using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
 namespace MainProcess
@@ -47,26 +45,56 @@ namespace MainProcess
                 return;
             }
 
-            var rawDataForLoop = CollectionsMarshal.AsSpan(rawData);
+            string errorTemp = error;
+            var timeListTemp = new List<double>(Enumerable.Repeat(0.0, rawData.Count).ToList());
+            var dataListTemp = new List<double>(timeListTemp);
 
-            for (int i = 0; i < rawDataForLoop.Length; i++)
+            int loopCount = rawData.Count;
+            int threadCount = Environment.ProcessorCount;
+            int chunkSize = loopCount / threadCount;
+
+            var tasks = new List<Task>();
+
+            var locker = new object();
+
+            for (int i = 0; i < threadCount; i++)
             {
-                string[] values = rawDataForLoop[i].Split(',');
+                int startIndex = i * chunkSize;
+                int endIndex = (i + 1) * chunkSize;
+                if (i == threadCount - 1)
+                {
+                    endIndex = loopCount;
+                }
 
-                if ((timeColumn > dataColumn ? timeColumn : dataColumn) > values.Length - 1)
+                var task = Task.Run(() =>
                 {
-                    if (error != "E002") error = "E002";
-                }
-                else
-                {
-                    if (double.TryParse(values[timeColumn].Trim(), out double timeTemp) && double.TryParse(values[dataColumn].Trim(), out double dataTemp))
+                    for (int n = startIndex; n < endIndex; n++)
                     {
-                        timeList.Add(timeTemp);
-                        dataList.Add(dataTemp);
+                        string[] values = rawData[n].Split(',');
+
+                        if ((timeColumn > dataColumn ? timeColumn : dataColumn) > values.Length - 1)
+                        {
+                            lock (locker) if (errorTemp != "E002") errorTemp = "E002";
+                        }
+                        else
+                        {
+                            if (double.TryParse(values[timeColumn].Trim(), out double timeTemp) && double.TryParse(values[dataColumn].Trim(), out double dataTemp))
+                            {
+                                timeListTemp[n] = timeTemp;
+                                dataListTemp[n] = dataTemp;
+                            }
+                            else lock (locker) if (errorTemp != "E001") errorTemp = "E001";
+                        }
                     }
-                    else if (error != "E001") error = "E001";
-                }
+                });
+                tasks.Add(task);
             }
+
+            Task.WaitAll(tasks.ToArray());
+
+            dataList = new List<double>(dataListTemp);
+            timeList = new List<double>(timeListTemp);
+            error = errorTemp;
 
             if (timeList.Count < 1) error = "E004";
         }
@@ -100,25 +128,23 @@ namespace MainProcess
         static List<double> HighpassFilter(List<double> data, uint range)
         {
             var temp = MovAverage(data, range);
-            var result = new List<double>();
-
-            for (int i = 0; i < data.Count; i++) result.Add(data[i] - temp[i]);
-
-            return result;
+            return data.Select((x, i) => x - temp[i]).ToList();
         }
 
-        List<double> PeakProtection(List<double> data, uint range, int ignitionTimeIndex)
+        List<double> PeakProtection(List<double> data, uint range)
         {
             double max;
-            var temp = new List<double>();
-            temp.AddRange(HighpassFilter(data, range));
+            var temp = new List<double>(HighpassFilter(data, range));
             for (int i = 0; i < temp.Count; i++) temp[i] = Math.Abs(temp[i]);
             max = temp.Max();
-            double IntensityValue = max / Convert.ToDouble(peakProtectionIntensity.Value.ToString());
+            double IntensityValue = max / peakProtectionIntensity.Value;
 
-            Parallel.For(0, temp.Count, i => temp[i] = 1 / (1 + Math.Exp(-(temp[i] - IntensityValue) * 20 / max)));
+            Parallel.For(0, temp.Count, i =>
+            {
+                temp[i] = 1 / (1 + Math.Exp(-(temp[i] - IntensityValue) * 20 / max));
+                temp[i] = temp[i] > 0.5 ? 1.0 : Math.Pow(temp[i] * 2, 4) / 16;
+            });
 
-            Parallel.For(ignitionTimeIndex, temp.Count, i => temp[i] = temp[i] > 0.5 ? 1.0 : Math.Pow(temp[i] * 2, 4) / 16);
             return temp;
         }
 
@@ -331,7 +357,7 @@ namespace MainProcess
                 MessageBox.Show("SkipもしくはCutoffで異常が発生しました。\nSkipとCutoffの合計がデータ全体の秒数を超えています。\nSkipやCutoffの数値を変更してください。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 toolStripStatus.Text = "ERROR";
                 Application.DoEvents();
-                Init();
+                graphInit.PerformClick();
             }
             timeListOut = new List<double>(timeList);
             thrustListOut = new List<double>(thrustList);
@@ -384,6 +410,7 @@ namespace MainProcess
             int ignitionTimeIndex;
             int burnOutTimeIndex;
             double offset;
+            double impulse;
             var timeList = new List<double>();
             var thrustList = new List<double>();
             var filteredSignalList = new List<double>();
@@ -409,13 +436,13 @@ namespace MainProcess
                     MessageBox.Show("ファイルが開けません。別のプロセスによって使用されている可能性があります。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     toolStripStatus.Text = "ERROR";
                     Application.DoEvents();
-                    Init();
+                    graphInit.PerformClick();
                     return;
                 case "E004":
                     MessageBox.Show("列指定エラー\n存在しない列を指定しています。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     toolStripStatus.Text = "ERROR";
                     Application.DoEvents();
-                    Init();
+                    graphInit.PerformClick();
                     return;
             }
 
@@ -432,7 +459,7 @@ namespace MainProcess
 
                     if (MessageBox.Show("一部で時間が逆行しています。ソートして読み込みますか？", "注意", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.No)
                     {
-                        Init();
+                        graphInit.PerformClick();
                         return;
                     }
 
@@ -454,7 +481,7 @@ namespace MainProcess
 
                     if (MessageBox.Show("同じ時間を指すデータが存在します。このまま読み込みますか？\n\n重複する行: \n" + string.Join("\n", sameTimeLine), "注意", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.No)
                     {
-                        Init();
+                        graphInit.PerformClick();
                         return;
                     }
                 }
@@ -510,7 +537,7 @@ namespace MainProcess
                         MessageBox.Show("燃焼時間の推定に失敗しました。\nデータの一部に異常が存在する可能性があります。\nSkipやCutoffの数値を調整して異常部分を回避してください。", "警告", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         toolStripStatus.Text = "ERROR";
                         Application.DoEvents();
-                        Init();
+                        graphInit.PerformClick();
                         return;
                 }
             } while (error == "E012");
@@ -535,12 +562,14 @@ namespace MainProcess
             var thrustMax = thrustList.Max();
             var timeWhenThrustMax = timeList[thrustList.IndexOf(thrustMax)];
 
-            peakProtection = PeakProtection(filteredSignalList, 80, ignitionTimeIndex);
+            peakProtection = PeakProtection(filteredSignalList, 80);
 
             var unfilteredSignalList = new List<double>(thrustList);
 
             if (denoise.Checked)
                 thrustList = thrustList.Select((x, i) => x * peakProtection[i] + filteredSignalList[i] * (1 - peakProtection[i])).ToList();
+
+            impulse = GetImpulse(timeList, unfilteredSignalList, ignitionTimeIndex, burnOutTimeIndex);
 
             ////////////////////////////////////////////////////////////////データ加工終了。以下描画処理////////////////////////////////////////////////////////////////
 
@@ -573,7 +602,7 @@ namespace MainProcess
 
                 if (isPlotImpulse.Checked && !showPeakProtectionIntensity.Checked)
                 {
-                    var impulseAno = formsPlot1.Plot.AddAnnotation(graphTitle + ": " + GetImpulse(timeList, unfilteredSignalList, ignitionTimeIndex, burnOutTimeIndex).ToString("F3") + " N⋅s", -10, 10 + 50 * countAnnotation);
+                    var impulseAno = formsPlot1.Plot.AddAnnotation(graphTitle + ": " + impulse.ToString("F3") + " N⋅s", -10, 10 + 50 * countAnnotation);
                     impulseAno.Font.Size = 28;
                     impulseAno.BackgroundColor = Color.FromArgb(25, Color.Black);
                     impulseAno.Shadow = false;
@@ -661,7 +690,7 @@ namespace MainProcess
             catch (InvalidOperationException)
             {
                 MessageBox.Show("原因不明なエラーによりグラフ描画に失敗しました。", "警告", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                Init();
+                graphInit.PerformClick();
                 toolStripStatus.Text = "ERROR";
                 Application.DoEvents();
                 return;
@@ -752,16 +781,9 @@ namespace MainProcess
 
         private void Init()
         {
-            formsPlot1.Plot.YAxis.Label("");
-            formsPlot1.Plot.YAxis2.Label("");
-            formsPlot1.Plot.YAxis2.Ticks(false);
-
-            formsPlot1.Plot.Clear();
-            formsPlot1.Refresh();
-
             countGraphs = 0;
             maxTime = new double[2];
-            countAnnotation = 0;
+            countAnnotation = 1;
             countBurnTimes = 0;
             skipTime.Value = 0;
             cutoffTime.Value = 0;
@@ -770,6 +792,19 @@ namespace MainProcess
 
         private void GraphInit_Click(object sender, EventArgs e)
         {
+            formsPlot1.Plot.YAxis.Label("");
+            formsPlot1.Plot.YAxis2.Label("");
+            formsPlot1.Plot.YAxis2.Ticks(false);
+
+            formsPlot1.Plot.Clear();
+
+            var impulseAno = formsPlot1.Plot.AddAnnotation("Total Impulse", -10, 10);
+            impulseAno.Font.Size = 28;
+            impulseAno.BackgroundColor = Color.FromArgb(25, Color.Black);
+            impulseAno.Shadow = false;
+
+            formsPlot1.Refresh();
+
             Init();
         }
 
