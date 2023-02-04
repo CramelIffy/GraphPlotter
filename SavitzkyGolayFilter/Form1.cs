@@ -96,6 +96,12 @@ namespace MainProcess
                         Application.DoEvents();
                         graphInit.PerformClick();
                         return;
+                    case "E005":
+                        MessageBox.Show("ファイルが開けません。ファイルサイズが大きすぎます。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        toolStripStatus.Text = "ERROR";
+                        Application.DoEvents();
+                        graphInit.PerformClick();
+                        return;
                 }
 
                 toolStripStatus.Text = "The file has been loaded.";
@@ -108,11 +114,10 @@ namespace MainProcess
             data.DataCropping((double)skipTime.Value * 0.001, (double)cutoffTime.Value * 0.001);
 
             if (readAsVol.Checked) data.SRegressionLine(@"./CalibrationData.csv");
-
-            data.CheckTimeData(fileName != previousFileName);
-
             toolStripStatus.Text = "Data cropping";
             Application.DoEvents();
+
+            data.CheckTimeData(fileName != previousFileName);
 
             do
             {
@@ -161,20 +166,17 @@ namespace MainProcess
                 }
             } while (data.error == "E012");
 
+            if (countGraphs == 0) maxTime[0] = data.timeList[data.thrustList.IndexOf(data.thrustList.Max())];
+            else maxTime[1] = data.timeList[data.thrustList.IndexOf(data.thrustList.Max())];
+
             if (SetIgnitionTimeZero.Checked)
             {
                 double ignitionTime = data.timeList[data.ignitionTimeIndex];
                 data.timeList = data.timeList.Select(i => i - ignitionTime).ToList();
             }
 
-            if (countGraphs == 0) maxTime[0] = data.timeList[data.thrustList.IndexOf(data.thrustList.Max())];
-            else maxTime[1] = data.timeList[data.thrustList.IndexOf(data.thrustList.Max())];
-
             if (countGraphs > 0 && isAlignMax.Checked)
             {
-                toolStripStatus.Text = "Aligning the max";
-                Application.DoEvents();
-
                 data.timeList = data.timeList.Select(i => i + maxTime[0] - maxTime[1]).ToList();
             }
 
@@ -341,6 +343,7 @@ namespace MainProcess
 
         private void OpenFile_Click(object sender, EventArgs e)
         {
+
             var ofd = new OpenFileDialog
             {
                 InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
@@ -353,42 +356,48 @@ namespace MainProcess
             if (ofd.ShowDialog() == DialogResult.OK)
             {
                 fileName = ofd.FileName;
+
+                data = new DataProcessing.DataProcessing(this, (uint)(timeColumnNum.Value - 1), (uint)(dataColumnNum.Value - 1));
+                data.SetFile(fileName);
+
+                switch (data.error)
+                {
+                    case "E000":
+                        break;
+                    case "E001":
+                        MessageBox.Show("数値以外のデータが含まれています。\n正しく読み込めない場合があります。", "注意", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        Application.DoEvents();
+                        break;
+                    case "E002":
+                        MessageBox.Show("読み込んだファイルの行の数とデータの要素数が一致しません。\n正しく読み込めない場合があります。", "注意", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        break;
+                    case "E003":
+                        MessageBox.Show("ファイルが開けません。別のプロセスによって使用されている可能性があります。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        toolStripStatus.Text = "ERROR";
+                        Application.DoEvents();
+                        graphInit.PerformClick();
+                        return;
+                    case "E004":
+                        MessageBox.Show("列指定エラー\n存在しない列を指定しています。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        toolStripStatus.Text = "ERROR";
+                        Application.DoEvents();
+                        graphInit.PerformClick();
+                        return;
+                    case "E005":
+                        MessageBox.Show("ファイルが開けません。ファイルサイズが大きすぎます。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        toolStripStatus.Text = "ERROR";
+                        Application.DoEvents();
+                        graphInit.PerformClick();
+                        return;
+                }
+
+                toolStripStatus.Text = "The file has been loaded.";
+                Application.DoEvents();
+
+                skipTime.Value = 0;
             }
 
             ofd.Dispose();
-
-            data = new DataProcessing.DataProcessing(this, (uint)(timeColumnNum.Value - 1), (uint)(dataColumnNum.Value - 1));
-            data.SetFile(fileName);
-
-            switch (data.error)
-            {
-                case "E000":
-                    break;
-                case "E001":
-                    MessageBox.Show("数値以外のデータが含まれています。\n正しく読み込めない場合があります。", "注意", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    Application.DoEvents();
-                    break;
-                case "E002":
-                    MessageBox.Show("読み込んだファイルの行の数とデータの要素数が一致しません。\n正しく読み込めない場合があります。", "注意", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    break;
-                case "E003":
-                    MessageBox.Show("ファイルが開けません。別のプロセスによって使用されている可能性があります。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    toolStripStatus.Text = "ERROR";
-                    Application.DoEvents();
-                    graphInit.PerformClick();
-                    return;
-                case "E004":
-                    MessageBox.Show("列指定エラー\n存在しない列を指定しています。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    toolStripStatus.Text = "ERROR";
-                    Application.DoEvents();
-                    graphInit.PerformClick();
-                    return;
-            }
-
-            toolStripStatus.Text = "The file has been loaded.";
-            Application.DoEvents();
-
-            skipTime.Value = 0;
 
             isFileLoaded = false;
         }
@@ -437,6 +446,8 @@ namespace MainProcess
             cutoffTime.Value = 0;
             previousFileName = "";
             isFileLoaded = false;
+            data = new DataProcessing.DataProcessing(this, (uint)(timeColumnNum.Value - 1), (uint)(dataColumnNum.Value - 1));
+            data.SetFile(fileName);
         }
 
         private void GraphInit_Click(object sender, EventArgs e)

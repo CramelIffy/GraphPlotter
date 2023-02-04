@@ -53,6 +53,10 @@ namespace DataProcessing
             {
                 error = "E003";
                 return (new List<double>(), new List<double>());
+            }catch(OutOfMemoryException)
+            {
+                error = "E005";
+                return (new List<double>(), new List<double>());
             }
 
             int length = rawData.Count;
@@ -270,6 +274,7 @@ namespace DataProcessing
                 else
                 { //うまく推定できなかった時の処理(推定プログラムの原理上、スラストデータの最大値付近のデータが原因に成りやすい。よって、そこら変のデータをスキップする)
                     double beforeThrustMax = thrustMax;
+                    int skipTimeIndex = 0;
                     while (beforeThrustMax == thrustMax)
                     {
                         beforeThrustMax = thrustMax;
@@ -277,7 +282,7 @@ namespace DataProcessing
                         {
                             error = "E012";
                             double floorMaxTime = Math.Floor((timeListTemp[filteredThrustListTemp.IndexOf(thrustMax)] - timeMin) * 100) * 0.01;
-                            int skipTimeIndex = 0;
+                            skipTimeIndex = 0;
                             for (int i = 0; i < timeListTemp.Count; i++)
                             {
                                 if (timeListTemp[i] > floorMaxTime + timeMin)
@@ -287,7 +292,7 @@ namespace DataProcessing
                                 }
                             }
                             autoSkipTime = timeListTemp[skipTimeIndex] - timeMin;
-                            timeListTemp = timeListTemp.Skip(skipTimeIndex).ToList();
+                            timeListTemp.RemoveRange(0, skipTimeIndex);
                             filteredThrustListTemp = filteredThrustListTemp.Skip(skipTimeIndex).ToList();
                             form1.skipTime.Value = (decimal)autoSkipTime * 1000;
                             form1.skipTime.Refresh();
@@ -297,25 +302,26 @@ namespace DataProcessing
                             trialCount++;
                         }
                         else
-                        { //上記の処理でもうまくいかなかった場合0.01秒ずつスキップしていく
-                            int skipTimeIndex = 0;
+                        { //上記の処理でもうまくいかなかった場合0.001*trialCount秒ずつスキップしていく
+                            skipTimeIndex = 0;
                             timeMin = timeListTemp[0];
                             for (int i = 0; i < timeListTemp.Count; i++)
                             {
-                                if (timeListTemp[i] > 0.01 + timeListTemp[0])
+                                if (timeListTemp[i] > 0.001 * trialCount + timeListTemp[0])
                                 {
                                     skipTimeIndex = i;
                                     break;
                                 }
                             }
                             autoSkipTime += timeListTemp[skipTimeIndex] - timeMin;
-                            timeListTemp = timeListTemp.Skip(skipTimeIndex).ToList();
+                            timeListTemp.RemoveRange(0, skipTimeIndex);
                             filteredThrustListTemp = filteredThrustListTemp.Skip(skipTimeIndex).ToList();
                             form1.skipTime.Value = (decimal)autoSkipTime * 1000;
                             form1.skipTime.Refresh();
                             thrustMax = filteredThrustListTemp.Max();
                             count1 = 0;
                             count2 = 0;
+                            trialCount++;
                         }
                     }
                 }
