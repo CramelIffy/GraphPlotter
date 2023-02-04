@@ -644,8 +644,6 @@
         private Label dataColumn;
         private Label timeColumn;
         private NumericUpDown dataColumnNum;
-        private NumericUpDown timeColumnNum;
-        private Button graphInit;
         private CheckBox isAlignMax;
         private CheckBox isPlotImpulse;
         private CheckBox offsetRemoval;
@@ -659,14 +657,16 @@
         private Label label5;
         private Label label6;
         private TrackBar burnoutThreshold;
-        private NumericUpDown skipTime;
         private NumericUpDown cutoffTime;
         private Label label7;
         private Label label8;
         private CheckBox SetIgnitionTimeZero;
         private Button GraphScaleInit;
         private StatusStrip statusStrip1;
-        private ToolStripStatusLabel toolStripStatus;
         private CheckBox isPlotAverageThrust;
+        internal ToolStripStatusLabel toolStripStatus;
+        private NumericUpDown timeColumnNum;
+        internal NumericUpDown skipTime;
+        internal Button graphInit;
     }
 }

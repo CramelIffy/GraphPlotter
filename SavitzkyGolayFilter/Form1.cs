@@ -2,6 +2,7 @@
 
 using GraphPlotter;
 using ScottPlot;
+using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
@@ -24,391 +25,8 @@ namespace MainProcess
         bool checkBoxWarming = false;
         double graphXLeft = 0;
         double graphXRight = 0;
-
-        static void ReadCsv(string file, uint timeColumn, uint dataColumn, out List<double> timeList, out List<double> dataList, out string error)
-        {
-            var rawData = new List<string>();
-            timeList = new List<double>();
-            dataList = new List<double>();
-            error = "E000";
-
-            try
-            {
-                using StreamReader reader = new(file);
-                string data = reader.ReadToEnd();
-                rawData = data.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList();
-            }
-            catch (IOException)
-            {
-                error = "E003";
-                return;
-            }
-
-            int length = rawData.Count;
-
-            string errorTemp = error;
-
-            var locker = new object();
-
-            var multiFor = new ParallelAssist.ParallelAssist();
-            timeList = new List<double>(
-                multiFor.ForMulti(rawData, 0, length - 1, (x, i) =>
-                {
-                    string[] values = x.Split(',');
-
-                    if (timeColumn > values.Length - 1)
-                    {
-                        lock (locker)
-                            if (errorTemp != "E002") errorTemp = "E002";
-                        return double.MinValue;
-                    }
-                    else
-                    {
-                        if (double.TryParse(values[timeColumn].Trim(), out double temp))
-                        {
-                            return temp;
-                        }
-                        else if (errorTemp != "E001")
-                            lock (locker) errorTemp = "E001";
-                        return double.MinValue;
-                    }
-                })
-            );
-            dataList = new List<double>(
-                multiFor.ForMulti(rawData, 0, length - 1, (x, i) =>
-                {
-                    string[] values = x.Split(',');
-
-                    if (dataColumn > values.Length - 1)
-                    {
-                        lock (locker)
-                            if (errorTemp != "E002") errorTemp = "E002";
-                        return double.MinValue;
-                    }
-                    else
-                    {
-                        if (double.TryParse(values[dataColumn].Trim(), out double temp))
-                        {
-                            return temp;
-                        }
-                        else if (errorTemp != "E001")
-                            lock (locker) errorTemp = "E001";
-                        return double.MinValue;
-                    }
-                })
-            );
-            int howManyDelete = 0;
-            for (int i = 0; i < length - howManyDelete; i++)
-            {
-                if (timeList[i] == double.MinValue || dataList[i] == double.MinValue)
-                {
-                    timeList.RemoveAt(i - howManyDelete);
-                    dataList.RemoveAt(i - howManyDelete);
-                    howManyDelete++;
-                    i--;
-                }
-            }
-
-            error = errorTemp;
-
-            if (timeList.Count < 1) error = "E004";
-        }
-
-        static double GetImpulse(List<double> timeList, List<double> dataList, int ignitionTimeIndex, int burnOutTimeIndex)
-        {
-            double totalInpulse = 0;
-
-            for (int i = ignitionTimeIndex; i < burnOutTimeIndex - 1; i++)
-                totalInpulse += (dataList[i] + dataList[i + 1]) * (timeList[i + 1] - timeList[i]);
-
-            return totalInpulse / 2;
-        }
-
-        static List<double> MovAverage(List<double> data, uint range)
-        {
-            var temp = new List<double>(data);
-            var result = new List<double>(data);
-
-            for (int i = 0; i < range - 1; i++) temp.Insert(0, 0);
-            Parallel.For(0, temp.Count - (int)range - 1, i =>
-            {
-                double sum = 0;
-                for (int j = 0; j < range; j++) sum += temp[i + j];
-                result[i] = sum / range;
-            });
-
-            return result;
-        }
-
-        static List<double> HighpassFilter(List<double> data, uint range)
-        {
-            var temp = MovAverage(data, range);
-            return data.Select((x, i) => x - temp[i]).ToList();
-        }
-
-        List<double> PeakProtection(List<double> data, uint range)
-        {
-            double max;
-            var temp = new List<double>(HighpassFilter(data, range));
-            for (int i = 0; i < temp.Count; i++) temp[i] = Math.Abs(temp[i]);
-            max = temp.Max();
-            double IntensityValue = max / peakProtectionIntensity.Value;
-
-            Parallel.For(0, temp.Count, i =>
-            {
-                temp[i] = 1 / (1 + Math.Exp(-(temp[i] - IntensityValue) * 20 / max));
-                temp[i] = temp[i] > 0.5 ? 1.0 : Math.Pow(temp[i] * 2, 4) / 16;
-            });
-
-            return temp;
-        }
-
-        static double GetOffset(List<double> dataList)
-        {
-            int skip = (int)(dataList.Count * 0.03);
-
-            double mean = dataList
-                .OrderBy(x => x)
-                .Skip(skip)
-                .Take(skip)
-                .Average();
-
-            return mean;
-        }
-
-        void GetTimesIndex(List<double> thrustList, List<double> timeList, double ignitionThreshold, double burnOutThreshold, bool isOffsetRemoved, out int ignitionTimeIndex, out int burnOutTimeIndex, out string error)
-        {
-            error = "E010";
-            const int ignitionMargin = 500;
-            const int burnOutMargin = 1000;
-            double offset = 0;
-            double thrustMax = thrustList.Max();
-            double timeMin = timeList.Min();
-            ignitionTimeIndex = 0;
-            burnOutTimeIndex = timeList.Count - 1;
-            int trialCount = 0;
-            int count1 = 0;
-            int count2 = 0;
-            int ignitionTimeIndexTemp = 0;
-            int burnOutTimeIndexTemp = burnOutTimeIndex;
-            var timeListTemp = new List<double>(timeList);
-            var thrustListTemp = new List<double>(thrustList);
-            double autoSkipTime = 0;
-            bool[] estimatedResults = new bool[] { false, false };
-
-            if (ignitionMargin + burnOutMargin >= thrustListTemp.Count)
-            {
-                error = "E011";
-                return;
-            }
-
-            if (!isOffsetRemoved) offset = GetOffset(thrustListTemp);
-
-            while (timeListTemp.Max() - timeListTemp.Min() > autoSkipTime)
-            {
-                Parallel.Invoke(() =>
-                {
-                    double threshold = (thrustMax - offset) * ignitionThreshold + offset;
-                    for (int i = 0; i < thrustListTemp.Count; i++) //燃焼開始時間推定
-                        if (thrustListTemp[i] > threshold)
-                        {
-                            count2++;
-                            if (count2 > ignitionMargin)
-                            {
-                                ignitionTimeIndexTemp = i - ignitionMargin;
-                                estimatedResults[0] = true;
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            if (count2 != 0)
-                                count2 = 0;
-                        }
-                }, () =>
-                {
-                    double threshold = (thrustMax - offset) * burnOutThreshold + offset;
-                    for (int i = thrustListTemp.Count - 1; i >= 0; i--) //燃焼終了時間推定
-                        if (thrustListTemp[i] > threshold)
-                        {
-                            count1++;
-                            if (count1 > burnOutMargin)
-                            {
-                                burnOutTimeIndexTemp = i + burnOutMargin;
-                                estimatedResults[1] = true;
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            if (count1 != 0)
-                                count1 = 0;
-                        }
-                });
-                if (ignitionTimeIndexTemp < burnOutTimeIndexTemp && estimatedResults[0] && estimatedResults[1]) break;
-                else
-                { //うまく推定できなかった時の処理(推定プログラムの原理上、スラストデータの最大値付近のデータが原因に成りやすい。よって、そこら変のデータをスキップする)
-                    double beforeThrustMax = thrustMax;
-                    while (beforeThrustMax == thrustMax)
-                    {
-                        beforeThrustMax = thrustMax;
-                        if (trialCount == 0)
-                        {
-                            error = "E012";
-                            double floorMaxTime = Math.Floor((timeListTemp[thrustListTemp.IndexOf(thrustMax)] - timeMin) * 100) * 0.01;
-                            int skipTimeIndex = 0;
-                            for (int i = 0; i < timeListTemp.Count; i++)
-                            {
-                                if (timeListTemp[i] > floorMaxTime + timeMin)
-                                {
-                                    skipTimeIndex = i;
-                                    break;
-                                }
-                            }
-                            autoSkipTime = timeListTemp[skipTimeIndex] - timeMin;
-                            timeListTemp = timeListTemp.Skip(skipTimeIndex).ToList();
-                            thrustListTemp = thrustListTemp.Skip(skipTimeIndex).ToList();
-                            skipTime.Value = (decimal)autoSkipTime * 1000;
-                            skipTime.Refresh();
-                            thrustMax = thrustListTemp.Max();
-                            count1 = 0;
-                            count2 = 0;
-                            trialCount++;
-                        }
-                        else
-                        { //上記の処理でもうまくいかなかった場合0.01秒ずつスキップしていく
-                            int skipTimeIndex = 0;
-                            timeMin = timeListTemp[0];
-                            for (int i = 0; i < timeListTemp.Count; i++)
-                            {
-                                if (timeListTemp[i] > 0.01 + timeListTemp[0])
-                                {
-                                    skipTimeIndex = i;
-                                    break;
-                                }
-                            }
-                            autoSkipTime += timeListTemp[skipTimeIndex] - timeMin;
-                            timeListTemp = timeListTemp.Skip(skipTimeIndex).ToList();
-                            thrustListTemp = thrustListTemp.Skip(skipTimeIndex).ToList();
-                            skipTime.Value = (decimal)autoSkipTime * 1000;
-                            skipTime.Refresh();
-                            thrustMax = thrustListTemp.Max();
-                            count1 = 0;
-                            count2 = 0;
-                        }
-                    }
-                }
-            }
-            if (timeListTemp.Max() - timeListTemp.Min() <= autoSkipTime) error = "E013";
-
-            ignitionTimeIndex = ignitionTimeIndexTemp;
-            burnOutTimeIndex = burnOutTimeIndexTemp;
-        }
-
-        void LeastSquares(out double a, out double b)
-        {//F[N] = av[mv] + b <=> y = ax + b
-            var x = new List<double>();
-            var y = new List<double>();
-
-            a = 0; b = 0;
-
-            ReadCsv(@"./CalibrationData.csv", 0, 1, out y, out x, out string error);//1列目のところに載せたおもりのkgを、2列目のところに記録された電圧を書いたcsvファイルを用意する。
-            switch (error)
-            {
-                case "E000":
-                    break;
-                case "E001":
-                    MessageBox.Show("数値以外のデータが含まれています。\n正しく読み込めない場合があります。", "注意", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    Application.DoEvents();
-                    break;
-                case "E002":
-                    MessageBox.Show("読み込んだファイルの行の数とデータの要素数が一致しません。\n正しく読み込めない場合があります。", "注意", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    break;
-                case "E003":
-                    MessageBox.Show("ファイルが開けません。\nCalibrationData.csvが同一フォルダ内に無い可能性があります。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    toolStripStatus.Text = "ERROR";
-                    Application.DoEvents();
-                    return;
-                case "E004":
-                    MessageBox.Show("列指定エラー\n存在しない列を指定しています。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    toolStripStatus.Text = "ERROR";
-                    Application.DoEvents();
-                    return;
-            }
-            //重力加速度を乗する(重力加速度は重力値推定計算サービスより)
-            y = y.Select(i => i * 9.796685).ToList();
-            // 変数 x の平均
-            double AverageOfX = (double)x.Average();
-            // 変数 y の平均
-            double AverageOfY = (double)y.Average();
-            // 変数 x と y の積の平均
-            double AverageOfXY = (double)x.Select(i => i * y[x.IndexOf(i)]).Average();
-            // 変数xの2乗の平均 
-            double AverageOfSquareX = (double)x.Select(i => i * i).Average();
-
-            // 単回帰直線の傾き
-            a = (AverageOfXY - AverageOfX * AverageOfY) / (AverageOfSquareX - AverageOfX * AverageOfX);
-            // 単回帰直線の切片
-            b = -a * AverageOfX + AverageOfY;
-        }
-
-        List<double> SRegressionLine(List<double> rawData)
-        {
-            LeastSquares(out double a, out double b);
-
-            return rawData.Select(i => i * a + b).ToList();
-        }
-
-        void DataCropping(List<double> timeList, List<double> thrustList, out List<double> timeListOut, out List<double> thrustListOut, double skipTime, double cutoffTime)
-        {
-            try
-            {
-                if (cutoffTime != 0)
-                {
-                    double maxtime = timeList.Max();
-                    for (int i = timeList.Count - 1; maxtime - timeList[i] < cutoffTime; i--)
-                    {
-                        thrustList.RemoveAt(timeList.Count - 1);
-                        timeList.RemoveAt(timeList.Count - 1);
-                    }
-                }
-
-                if (skipTime != 0)
-                {
-                    int skipTimeIndex = 0;
-                    double mintime = timeList.Min();
-                    for (int i = 0; i < timeList.Count; i++)
-                    {
-                        if (timeList[i] - mintime > skipTime)
-                        {
-                            skipTimeIndex = i;
-                            break;
-                        }
-                    }
-                    timeList.RemoveRange(0, skipTimeIndex);
-                    thrustList.RemoveRange(0, skipTimeIndex);
-                }
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                MessageBox.Show("SkipもしくはCutoffで異常が発生しました。\nSkipとCutoffの合計がデータ全体の秒数を超えています。\nSkipやCutoffの数値を変更してください。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                toolStripStatus.Text = "ERROR";
-                Application.DoEvents();
-                graphInit.PerformClick();
-            }
-            timeListOut = new List<double>(timeList);
-            thrustListOut = new List<double>(thrustList);
-        }
-
-        static double GetAverage(List<double> thrustList, int startIndex, int endIndex)
-        {
-            var result = thrustList
-                .Skip(startIndex)
-                .Take(endIndex - startIndex)
-                .Average();
-
-            return result;
-        }
+        private DataProcessing.DataProcessing data;
+        bool isFileLoaded = false;
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -440,125 +58,89 @@ namespace MainProcess
 
             if (fileName == "")
             {
-                MessageBox.Show("読み込むファイルを選択してください。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("ファイルが読み込まれていません。\nSelect Fileボタンを押してファイルを読み込んでください。", "警告", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                toolStripStatus.Text = "ERROR";
+                Application.DoEvents();
+                graphInit.PerformClick();
                 return;
             }
 
-            int ignitionTimeIndex;
-            int burnOutTimeIndex;
-            double offset;
-            double thrustMax;
-            double timeWhenThrustMax;
-            double impulse;
-            double averageThrust;
-            List<double> timeList;
-            List<double> thrustList;
-            List<double> filteredSignalList;
-            List<double> peakProtection;
-
-            toolStripStatus.Text = "File loading";
+            toolStripStatus.Text = "Determined the file to be read";
             Application.DoEvents();
 
-            ReadCsv(fileName, (uint)(timeColumnNum.Value - 1), (uint)(dataColumnNum.Value - 1), out timeList, out thrustList, out string error);
-
-            switch (error)
+            if (isFileLoaded)
             {
-                case "E000":
-                    break;
-                case "E001":
-                    MessageBox.Show("数値以外のデータが含まれています。\n正しく読み込めない場合があります。", "注意", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    Application.DoEvents();
-                    break;
-                case "E002":
-                    MessageBox.Show("読み込んだファイルの行の数とデータの要素数が一致しません。\n正しく読み込めない場合があります。", "注意", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    break;
-                case "E003":
-                    MessageBox.Show("ファイルが開けません。別のプロセスによって使用されている可能性があります。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    toolStripStatus.Text = "ERROR";
-                    Application.DoEvents();
-                    graphInit.PerformClick();
-                    return;
-                case "E004":
-                    MessageBox.Show("列指定エラー\n存在しない列を指定しています。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    toolStripStatus.Text = "ERROR";
-                    Application.DoEvents();
-                    graphInit.PerformClick();
-                    return;
-            }
+                data = new DataProcessing.DataProcessing(this, (uint)(timeColumnNum.Value - 1), (uint)(dataColumnNum.Value - 1));
+                data.SetFile(fileName);
 
-            if (readAsMs.Checked) timeList = timeList.Select(i => i * 0.001).ToList();
-
-            if (readAsVol.Checked) thrustList = SRegressionLine(thrustList);
-
-            if (previousFileName != fileName)
-            {
-                if (timeList.Where((x, i) => x < timeList[i - 1 < 0 ? 0 : i - 1]).Any())//時間データが昇順になっていない時の処理
+                switch (data.error)
                 {
-                    toolStripStatus.Text = "Retrograde time data";
-                    Application.DoEvents();
-
-                    if (MessageBox.Show("一部で時間が逆行しています。ソートして読み込みますか？", "注意", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.No)
-                    {
+                    case "E000":
+                        break;
+                    case "E001":
+                        MessageBox.Show("数値以外のデータが含まれています。\n正しく読み込めない場合があります。", "注意", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        Application.DoEvents();
+                        break;
+                    case "E002":
+                        MessageBox.Show("読み込んだファイルの行の数とデータの要素数が一致しません。\n正しく読み込めない場合があります。", "注意", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        break;
+                    case "E003":
+                        MessageBox.Show("ファイルが開けません。別のプロセスによって使用されている可能性があります。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        toolStripStatus.Text = "ERROR";
+                        Application.DoEvents();
                         graphInit.PerformClick();
                         return;
-                    }
-
-                    var timeAndThrustList = timeList
-                        .Select((x, i) => new { Time = x, Data = thrustList[i], })
-                        .OrderBy(x => x.Time).ToList();
-
-                    timeList = timeList.Select((x, i) => timeAndThrustList[i].Time).ToList();
-                    thrustList = thrustList.Select((x, i) => timeAndThrustList[i].Data).ToList();
-                }
-                if (timeList.Where((x, i) => x == timeList[i - 1 < 0 ? i + 1 : i - 1]).Any())//時間データが重複している時の処理
-                {
-                    toolStripStatus.Text = "Duplicate time data";
-                    Application.DoEvents();
-
-                    var sameTimeLine = new List<int>();
-                    for (int i = 1; i < timeList.Count; i++)
-                        if (timeList[i] == timeList[i - 1]) sameTimeLine.Add(i);
-
-                    if (MessageBox.Show("同じ時間を指すデータが存在します。このまま読み込みますか？\n\n重複する行: \n" + string.Join("\n", sameTimeLine), "注意", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.No)
-                    {
+                    case "E004":
+                        MessageBox.Show("列指定エラー\n存在しない列を指定しています。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        toolStripStatus.Text = "ERROR";
+                        Application.DoEvents();
                         graphInit.PerformClick();
                         return;
-                    }
                 }
+
+                toolStripStatus.Text = "The file has been loaded.";
+                Application.DoEvents();
             }
+            else isFileLoaded = true;
+
+            if (readAsMs.Checked) data.TimeConvert(0.001);
+
+            data.DataCropping((double)skipTime.Value * 0.001, (double)cutoffTime.Value * 0.001);
+
+            if (readAsVol.Checked) data.SRegressionLine(@"./CalibrationData.csv");
+
+            data.CheckTimeData(fileName != previousFileName);
 
             toolStripStatus.Text = "Data cropping";
             Application.DoEvents();
-
-            DataCropping(timeList, thrustList, out timeList, out thrustList, (double)skipTime.Value * 0.001, (double)cutoffTime.Value * 0.001);
 
             do
             {
                 toolStripStatus.Text = "Denoised data generating";
                 Application.DoEvents();
 
-                filteredSignalList = new List<double>(new DataProcessing.SavitzkyGolayFilter(21, 4).Process(thrustList.ToArray()));
+                data.GetFilterThrustList(21, 4);
 
-                offset = GetOffset(filteredSignalList);
+                data.GetOffset();
 
                 if (offsetRemoval.Checked)
                 {
                     toolStripStatus.Text = "Deoffsetting";
                     Application.DoEvents();
 
-                    thrustList = thrustList.Select(i => i - offset).ToList();
-                    filteredSignalList = filteredSignalList.Select(i => i - offset).ToList();
+                    data.thrustList = data.thrustList.Select(i => i - data.offset).ToList();
+                    data.filteredThrustList = data.filteredThrustList.Select(i => i - data.offset).ToList();
 
-                    offset = 0;
+                    data.offset = 0;
                 }
 
 
                 toolStripStatus.Text = "Burn time estimating";
                 Application.DoEvents();
 
-                GetTimesIndex(filteredSignalList, timeList, igniThreshold.Value * 0.01, burnoutThreshold.Value * 0.01, offsetRemoval.Checked, out ignitionTimeIndex, out burnOutTimeIndex, out error);
+                data.GetTimesIndex(igniThreshold.Value * 0.01, burnoutThreshold.Value * 0.01, offsetRemoval.Checked);
 
-                switch (error)
+                switch (data.error)
                 {
                     case "E010": break;
                     case "E011":
@@ -568,7 +150,7 @@ namespace MainProcess
                         toolStripStatus.Text = "Data skip time estimation complete. Rerun.";
                         Application.DoEvents();
                         MessageBox.Show("燃焼時間の推定に失敗しました。\nSkipする時間を自動調整して再挑戦します。", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        DataCropping(timeList, thrustList, out timeList, out thrustList, (double)skipTime.Value * 0.001, 0);
+                        data.DataCropping((double)skipTime.Value * 0.001, 0.0);
                         break;
                     case "E013":
                         MessageBox.Show("燃焼時間の推定に失敗しました。\nデータの一部に異常が存在する可能性があります。\nSkipやCutoffの数値を調整して異常部分を回避してください。", "警告", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -577,36 +159,36 @@ namespace MainProcess
                         graphInit.PerformClick();
                         return;
                 }
-            } while (error == "E012");
+            } while (data.error == "E012");
 
             if (SetIgnitionTimeZero.Checked)
             {
-                double ignitionTime = timeList[ignitionTimeIndex];
-                timeList = timeList.Select(i => i - ignitionTime).ToList();
+                double ignitionTime = data.timeList[data.ignitionTimeIndex];
+                data.timeList = data.timeList.Select(i => i - ignitionTime).ToList();
             }
 
-            if (countGraphs == 0) maxTime[0] = timeList[thrustList.IndexOf(thrustList.Max())];
-            else maxTime[1] = timeList[thrustList.IndexOf(thrustList.Max())];
+            if (countGraphs == 0) maxTime[0] = data.timeList[data.thrustList.IndexOf(data.thrustList.Max())];
+            else maxTime[1] = data.timeList[data.thrustList.IndexOf(data.thrustList.Max())];
 
             if (countGraphs > 0 && isAlignMax.Checked)
             {
                 toolStripStatus.Text = "Aligning the max";
                 Application.DoEvents();
 
-                timeList = timeList.Select(i => i + maxTime[0] - maxTime[1]).ToList();
+                data.timeList = data.timeList.Select(i => i + maxTime[0] - maxTime[1]).ToList();
             }
 
-            thrustMax = thrustList.Max();
-            timeWhenThrustMax = timeList[thrustList.IndexOf(thrustMax)];
+            data.thrustMax = data.thrustList.Max();
+            data.timeWhenThrustMax = data.timeList[data.thrustList.IndexOf(data.thrustMax)];
 
-            peakProtection = PeakProtection(filteredSignalList, 80);
-
-            impulse = GetImpulse(timeList, thrustList, ignitionTimeIndex, burnOutTimeIndex);
-
-            averageThrust = GetAverage(thrustList, ignitionTimeIndex, burnOutTimeIndex);
+            Parallel.Invoke(
+                () => data.PeakProtectionIntensity(80, peakProtectionIntensity.Value),
+                () => data.GetImpulse(data.ignitionTimeIndex, data.burnOutTimeIndex),
+                () => data.GetAverage(data.ignitionTimeIndex, data.burnOutTimeIndex)
+                );
 
             if (denoise.Checked)
-                thrustList = thrustList.Select((x, i) => x * peakProtection[i] + filteredSignalList[i] * (1 - peakProtection[i])).ToList();
+                data.thrustList = data.thrustList.Select((x, i) => x * data.peakProtection[i] + data.filteredThrustList[i] * (1 - data.peakProtection[i])).ToList();
 
             ////////////////////////////////////////////////////////////////データ加工終了。以下描画処理////////////////////////////////////////////////////////////////
 
@@ -630,8 +212,8 @@ namespace MainProcess
 
                 if (isPlotMax.Checked && !showPeakProtectionIntensity.Checked)
                 {
-                    var maxMarker = formsPlot1.Plot.AddMarker(timeWhenThrustMax, thrustMax, MarkerShape.filledCircle, 5, Color.Red);
-                    maxMarker.Text = "Max(" + graphTitle + "): " + thrustMax.ToString("F3") + " N";
+                    var maxMarker = formsPlot1.Plot.AddMarker(data.timeWhenThrustMax, data.thrustMax, MarkerShape.filledCircle, 5, Color.Red);
+                    maxMarker.Text = "Max(" + graphTitle + "): " + data.thrustMax.ToString("F3") + " N";
                     maxMarker.TextFont.Color = Color.Black;
                     maxMarker.TextFont.Alignment = Alignment.MiddleLeft;
                     maxMarker.TextFont.Size = 28;
@@ -639,7 +221,7 @@ namespace MainProcess
 
                 if (isPlotImpulse.Checked && !showPeakProtectionIntensity.Checked)
                 {
-                    var impulseAno = formsPlot1.Plot.AddAnnotation(graphTitle + ": " + impulse.ToString("F3") + " N⋅s", -10, 10 + 50 * countAnnotation);
+                    var impulseAno = formsPlot1.Plot.AddAnnotation(graphTitle + ": " + data.impulse.ToString("F3") + " N⋅s", -10, 10 + 50 * countAnnotation);
                     impulseAno.Font.Size = 28;
                     impulseAno.BackgroundColor = Color.FromArgb(25, Color.Black);
                     impulseAno.Shadow = false;
@@ -652,7 +234,7 @@ namespace MainProcess
 
             if (!showPeakProtectionIntensity.Checked)
             {
-                var graph = formsPlot1.Plot.AddSignalXY(timeList.ToArray(), thrustList.ToArray(), label: graphTitle);
+                var graph = formsPlot1.Plot.AddSignalXY(data.timeList.ToArray(), data.thrustList.ToArray(), label: graphTitle);
                 graph.LineWidth = 3;
                 graphColor = graph.LineColor;
 
@@ -661,7 +243,7 @@ namespace MainProcess
             }
             else
             {
-                var peakProtectionIntensityGraph = formsPlot1.Plot.AddSignalXY(timeList.ToArray(), peakProtection.ToArray(), label: "Peak protection intensity of the " + graphTitle);
+                var peakProtectionIntensityGraph = formsPlot1.Plot.AddSignalXY(data.timeList.ToArray(), data.peakProtection.ToArray(), label: "Peak protection intensity of the " + graphTitle);
                 peakProtectionIntensityGraph.YAxisIndex = 1;
                 peakProtectionIntensityGraph.XAxisIndex = 0;
 
@@ -675,7 +257,7 @@ namespace MainProcess
                 if (isPlotAverageThrust.Checked && !showPeakProtectionIntensity.Checked)
                 {
 
-                    var averageThrustLine = formsPlot1.Plot.AddHorizontalLine(averageThrust);
+                    var averageThrustLine = formsPlot1.Plot.AddHorizontalLine(data.averageThrust);
                     averageThrustLine.LineWidth = 1;
                     averageThrustLine.PositionLabel = true;
                     averageThrustLine.Color = graphColor;
@@ -685,23 +267,23 @@ namespace MainProcess
 
                 if (isPlotBurnTime.Checked && !showPeakProtectionIntensity.Checked)
                 {
-                    double margin = (thrustList.Max() - offset) * 0.06 * countBurnTimes;
-                    var burnTimeAno = formsPlot1.Plot.AddBracket(timeList[ignitionTimeIndex], -margin, timeList[burnOutTimeIndex], -margin, graphTitle + ": " + (timeList[burnOutTimeIndex] - timeList[ignitionTimeIndex]).ToString("F2") + " s");
+                    double margin = (data.thrustList.Max() - data.offset) * 0.06 * countBurnTimes;
+                    var burnTimeAno = formsPlot1.Plot.AddBracket(data.timeList[data.ignitionTimeIndex], -margin, data.timeList[data.burnOutTimeIndex], -margin, graphTitle + ": " + (data.timeList[data.burnOutTimeIndex] - data.timeList[data.ignitionTimeIndex]).ToString("F2") + " s");
                     burnTimeAno.Font.Size = 22;
 
                     if (countGraphs == 0)
                     {
-                        var timeListForFill = timeList
-                            .Skip(ignitionTimeIndex)
-                            .Take(burnOutTimeIndex - ignitionTimeIndex)
+                        var timeListForFill = data.timeList
+                            .Skip(data.ignitionTimeIndex)
+                            .Take(data.burnOutTimeIndex - data.ignitionTimeIndex)
                             .ToArray();
 
-                        var thrustListForFill = thrustList
-                            .Skip(ignitionTimeIndex)
-                            .Take(burnOutTimeIndex - ignitionTimeIndex)
+                        var thrustListForFill = data.thrustList
+                            .Skip(data.ignitionTimeIndex)
+                            .Take(data.burnOutTimeIndex - data.ignitionTimeIndex)
                             .ToArray();
 
-                        if (burnOutTimeIndex != ignitionTimeIndex)
+                        if (data.burnOutTimeIndex != data.ignitionTimeIndex)
                             formsPlot1.Plot.AddFill(timeListForFill, thrustListForFill, 0, Color.FromArgb(0x30000000));
                     }
 
@@ -711,12 +293,12 @@ namespace MainProcess
 
             countGraphs++;
 
-            graphXLeft = timeList[ignitionTimeIndex] - (timeList[burnOutTimeIndex] - timeList[ignitionTimeIndex]) * 0.04;
-            graphXRight = timeList[burnOutTimeIndex] + (timeList[burnOutTimeIndex] - timeList[ignitionTimeIndex]) * 0.08;
+            graphXLeft = data.timeList[data.ignitionTimeIndex] - (data.timeList[data.burnOutTimeIndex] - data.timeList[data.ignitionTimeIndex]) * 0.04;
+            graphXRight = data.timeList[data.burnOutTimeIndex] + (data.timeList[data.burnOutTimeIndex] - data.timeList[data.ignitionTimeIndex]) * 0.08;
 
             formsPlot1.Plot.Legend();
 
-            double graphMaxY = thrustList.Max();
+            double graphMaxY = data.thrustList.Max();
             formsPlot1.Plot.SetAxisLimitsX(graphXLeft, graphXRight);
             formsPlot1.Plot.AxisAutoY();
             try
@@ -775,10 +357,40 @@ namespace MainProcess
 
             ofd.Dispose();
 
+            data = new DataProcessing.DataProcessing(this, (uint)(timeColumnNum.Value - 1), (uint)(dataColumnNum.Value - 1));
+            data.SetFile(fileName);
+
+            switch (data.error)
+            {
+                case "E000":
+                    break;
+                case "E001":
+                    MessageBox.Show("数値以外のデータが含まれています。\n正しく読み込めない場合があります。", "注意", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    Application.DoEvents();
+                    break;
+                case "E002":
+                    MessageBox.Show("読み込んだファイルの行の数とデータの要素数が一致しません。\n正しく読み込めない場合があります。", "注意", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    break;
+                case "E003":
+                    MessageBox.Show("ファイルが開けません。別のプロセスによって使用されている可能性があります。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    toolStripStatus.Text = "ERROR";
+                    Application.DoEvents();
+                    graphInit.PerformClick();
+                    return;
+                case "E004":
+                    MessageBox.Show("列指定エラー\n存在しない列を指定しています。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    toolStripStatus.Text = "ERROR";
+                    Application.DoEvents();
+                    graphInit.PerformClick();
+                    return;
+            }
+
+            toolStripStatus.Text = "The file has been loaded.";
+            Application.DoEvents();
+
             skipTime.Value = 0;
 
-            toolStripStatus.Text = "Determined files to be read";
-            Application.DoEvents();
+            isFileLoaded = false;
         }
 
         private void SaveFigure_Click(object sender, EventArgs e)
@@ -824,6 +436,7 @@ namespace MainProcess
             skipTime.Value = 0;
             cutoffTime.Value = 0;
             previousFileName = "";
+            isFileLoaded = false;
         }
 
         private void GraphInit_Click(object sender, EventArgs e)
