@@ -237,18 +237,18 @@ namespace MainProcess
                 }
             }
 
-            var graphColor = Color.FromArgb(255, (int)(15 + countGraphs * 15), (int)(20 + countGraphs * 20), (int)(25 + countGraphs * 25));
+            var graphColor = Color.FromArgb(255, (int)(30 + countGraphs * 120) % 192, (int)(40 + countGraphs * 160) % 192, (int)(50 + countGraphs * 200) % 192);
 
             if (!showPeakProtectionIntensity.Checked)
             {
                 if (DenoisedVsRaw.Checked)
                 {
                     var graphDenoisedVsRaw = formsPlot1.Plot.AddSignalXY(data.timeList.ToArray(), unfilteredThrustList.ToArray(), label: graphTitle + "(original)");
-                    graphDenoisedVsRaw.LineWidth = 4;
-                    graphDenoisedVsRaw.LineColor = Color.FromArgb(170, graphColor.R + 100, graphColor.G + 100, graphColor.B + 100);
+                    graphDenoisedVsRaw.LineWidth = 3;
+                    graphDenoisedVsRaw.LineColor = Color.FromArgb(90, graphColor);
                 }
                 var graph = formsPlot1.Plot.AddSignalXY(data.timeList.ToArray(), data.thrustList.ToArray(), label: graphTitle + (DenoisedVsRaw.Checked ? "(denoised)" : ""));
-                graph.LineWidth = 3;
+                graph.LineWidth = 2;
                 graph.LineColor = graphColor;
 
                 formsPlot1.Plot.YAxis.Label("Thrust [N]");
