@@ -67,6 +67,7 @@
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.toolStripStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.isPlotAverageThrust = new System.Windows.Forms.CheckBox();
+            this.DenoisedVsRaw = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.peakProtectionIntensity)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dataColumnNum)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.timeColumnNum)).BeginInit();
@@ -92,7 +93,7 @@
             // 
             this.denoise.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.denoise.AutoSize = true;
-            this.denoise.Location = new System.Drawing.Point(1677, 268);
+            this.denoise.Location = new System.Drawing.Point(1677, 266);
             this.denoise.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.denoise.Name = "denoise";
             this.denoise.Size = new System.Drawing.Size(103, 25);
@@ -105,7 +106,7 @@
             // 
             this.showPeakProtectionIntensity.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.showPeakProtectionIntensity.AutoSize = true;
-            this.showPeakProtectionIntensity.Location = new System.Drawing.Point(1677, 330);
+            this.showPeakProtectionIntensity.Location = new System.Drawing.Point(1677, 359);
             this.showPeakProtectionIntensity.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.showPeakProtectionIntensity.Name = "showPeakProtectionIntensity";
             this.showPeakProtectionIntensity.Size = new System.Drawing.Size(294, 25);
@@ -131,7 +132,7 @@
             // 
             this.peakProtectionIntensity.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.peakProtectionIntensity.LargeChange = 10;
-            this.peakProtectionIntensity.Location = new System.Drawing.Point(1671, 361);
+            this.peakProtectionIntensity.Location = new System.Drawing.Point(1675, 390);
             this.peakProtectionIntensity.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.peakProtectionIntensity.Maximum = 20;
             this.peakProtectionIntensity.Name = "peakProtectionIntensity";
@@ -143,7 +144,7 @@
             // 
             this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(1671, 399);
+            this.label1.Location = new System.Drawing.Point(1675, 428);
             this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(222, 21);
@@ -155,7 +156,7 @@
             this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label2.AutoSize = true;
             this.label2.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.label2.Location = new System.Drawing.Point(1922, 399);
+            this.label2.Location = new System.Drawing.Point(1926, 428);
             this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(35, 21);
@@ -333,7 +334,7 @@
             this.offsetRemoval.AutoSize = true;
             this.offsetRemoval.Checked = true;
             this.offsetRemoval.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.offsetRemoval.Location = new System.Drawing.Point(1677, 299);
+            this.offsetRemoval.Location = new System.Drawing.Point(1677, 328);
             this.offsetRemoval.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.offsetRemoval.Name = "offsetRemoval";
             this.offsetRemoval.Size = new System.Drawing.Size(163, 25);
@@ -403,7 +404,7 @@
             this.label3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label3.AutoSize = true;
             this.label3.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.label3.Location = new System.Drawing.Point(1912, 464);
+            this.label3.Location = new System.Drawing.Point(1916, 493);
             this.label3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(45, 21);
@@ -414,7 +415,7 @@
             // 
             this.label4.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(1671, 464);
+            this.label4.Location = new System.Drawing.Point(1675, 493);
             this.label4.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(247, 21);
@@ -425,7 +426,7 @@
             // 
             this.igniThreshold.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.igniThreshold.LargeChange = 10;
-            this.igniThreshold.Location = new System.Drawing.Point(1671, 426);
+            this.igniThreshold.Location = new System.Drawing.Point(1675, 455);
             this.igniThreshold.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.igniThreshold.Maximum = 100;
             this.igniThreshold.Name = "igniThreshold";
@@ -439,7 +440,7 @@
             this.label5.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label5.AutoSize = true;
             this.label5.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.label5.Location = new System.Drawing.Point(1912, 529);
+            this.label5.Location = new System.Drawing.Point(1916, 558);
             this.label5.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(45, 21);
@@ -450,7 +451,7 @@
             // 
             this.label6.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(1671, 529);
+            this.label6.Location = new System.Drawing.Point(1675, 558);
             this.label6.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(252, 21);
@@ -461,7 +462,7 @@
             // 
             this.burnoutThreshold.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.burnoutThreshold.LargeChange = 10;
-            this.burnoutThreshold.Location = new System.Drawing.Point(1671, 491);
+            this.burnoutThreshold.Location = new System.Drawing.Point(1675, 520);
             this.burnoutThreshold.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.burnoutThreshold.Maximum = 100;
             this.burnoutThreshold.Name = "burnoutThreshold";
@@ -566,11 +567,27 @@
             this.isPlotAverageThrust.UseVisualStyleBackColor = true;
             this.isPlotAverageThrust.CheckedChanged += new System.EventHandler(this.IsPlotAverageThrust_CheckedChanged);
             // 
+            // DenoisedVsRaw
+            // 
+            this.DenoisedVsRaw.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.DenoisedVsRaw.AutoSize = true;
+            this.DenoisedVsRaw.Checked = true;
+            this.DenoisedVsRaw.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.DenoisedVsRaw.Location = new System.Drawing.Point(1677, 297);
+            this.DenoisedVsRaw.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.DenoisedVsRaw.Name = "DenoisedVsRaw";
+            this.DenoisedVsRaw.Size = new System.Drawing.Size(174, 25);
+            this.DenoisedVsRaw.TabIndex = 36;
+            this.DenoisedVsRaw.Text = "Denoised vs Raw";
+            this.toolTip1.SetToolTip(this.DenoisedVsRaw, "ノイズ除去済みデータと元データを同時に表示します。");
+            this.DenoisedVsRaw.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 21F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1978, 1001);
+            this.Controls.Add(this.DenoisedVsRaw);
             this.Controls.Add(this.isPlotAverageThrust);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.GraphScaleInit);
@@ -668,5 +685,6 @@
         private NumericUpDown timeColumnNum;
         internal NumericUpDown skipTime;
         internal Button graphInit;
+        private CheckBox DenoisedVsRaw;
     }
 }

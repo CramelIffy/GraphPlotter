@@ -58,11 +58,14 @@ namespace MainProcess
 
             if (fileName == "")
             {
-                MessageBox.Show("ファイルが読み込まれていません。\nSelect Fileボタンを押してファイルを読み込んでください。", "警告", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                toolStripStatus.Text = "ERROR";
-                Application.DoEvents();
-                graphInit.PerformClick();
-                return;
+                if (MessageBox.Show("ファイルが読み込まれていません。\n読み込みますか？", "注意", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+                {
+                    selectFile.PerformClick();
+                }
+                else
+                {
+                    return;
+                }
             }
 
             toolStripStatus.Text = "Determined the file to be read";
@@ -189,7 +192,9 @@ namespace MainProcess
                 () => data.GetAverage(data.ignitionTimeIndex, data.burnOutTimeIndex)
                 );
 
-            if (denoise.Checked)
+            var unfilteredThrustList = data.thrustList;
+
+            if (denoise.Checked || DenoisedVsRaw.Checked)
                 data.thrustList = data.thrustList.Select((x, i) => x * data.peakProtection[i] + data.filteredThrustList[i] * (1 - data.peakProtection[i])).ToList();
 
             ////////////////////////////////////////////////////////////////データ加工終了。以下描画処理////////////////////////////////////////////////////////////////
@@ -232,13 +237,19 @@ namespace MainProcess
                 }
             }
 
-            var graphColor = Color.Black;
+            var graphColor = Color.FromArgb(255, (int)(15 + countGraphs * 15), (int)(20 + countGraphs * 20), (int)(25 + countGraphs * 25));
 
             if (!showPeakProtectionIntensity.Checked)
             {
-                var graph = formsPlot1.Plot.AddSignalXY(data.timeList.ToArray(), data.thrustList.ToArray(), label: graphTitle);
+                if (DenoisedVsRaw.Checked)
+                {
+                    var graphDenoisedVsRaw = formsPlot1.Plot.AddSignalXY(data.timeList.ToArray(), unfilteredThrustList.ToArray(), label: graphTitle + "(original)");
+                    graphDenoisedVsRaw.LineWidth = 4;
+                    graphDenoisedVsRaw.LineColor = Color.FromArgb(170, graphColor.R + 100, graphColor.G + 100, graphColor.B + 100);
+                }
+                var graph = formsPlot1.Plot.AddSignalXY(data.timeList.ToArray(), data.thrustList.ToArray(), label: graphTitle + (DenoisedVsRaw.Checked ? "(denoised)" : ""));
                 graph.LineWidth = 3;
-                graphColor = graph.LineColor;
+                graph.LineColor = graphColor;
 
                 formsPlot1.Plot.YAxis.Label("Thrust [N]");
                 formsPlot1.Plot.XAxis.Label("Time [s]");
@@ -447,7 +458,7 @@ namespace MainProcess
             previousFileName = "";
             isFileLoaded = false;
             data = new DataProcessing.DataProcessing(this, (uint)(timeColumnNum.Value - 1), (uint)(dataColumnNum.Value - 1));
-            data.SetFile(fileName);
+            if (fileName != "") data.SetFile(fileName);
         }
 
         private void GraphInit_Click(object sender, EventArgs e)
