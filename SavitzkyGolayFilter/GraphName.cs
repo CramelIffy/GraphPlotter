@@ -20,7 +20,7 @@
             value = textBox1.Text;
         }
 
-        private void GraphName_KeyDown(object sender, KeyEventArgs e)
+        private void GraphName_KeyDown(object? sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Enter)
             {

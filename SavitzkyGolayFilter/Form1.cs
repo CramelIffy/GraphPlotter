@@ -1,7 +1,6 @@
 ﻿//#define TIMER
 
 using GraphPlotter;
-using MathNet.Numerics.LinearAlgebra;
 using ScottPlot;
 using System.Data;
 using System.Diagnostics;
@@ -45,55 +44,71 @@ namespace MainProcess
                 return;
             }
 
+            int length = rawData.Count;
+
             string errorTemp = error;
-            var timeListTemp = new List<double>(Enumerable.Repeat(0.0, rawData.Count).ToList());
-            var dataListTemp = new List<double>(timeListTemp);
-
-            int loopCount = rawData.Count;
-            int threadCount = Environment.ProcessorCount;
-            int chunkSize = loopCount / threadCount;
-
-            var tasks = new List<Task>();
 
             var locker = new object();
 
-            for (int i = 0; i < threadCount; i++)
-            {
-                int startIndex = i * chunkSize;
-                int endIndex = (i + 1) * chunkSize;
-                if (i == threadCount - 1)
+            var multiFor = new ParallelAssist.ParallelAssist();
+            timeList = new List<double>(
+                multiFor.ForMulti(rawData, 0, length - 1, (x, i) =>
                 {
-                    endIndex = loopCount;
-                }
+                    string[] values = x.Split(',');
 
-                var task = Task.Run(() =>
-                {
-                    for (int n = startIndex; n < endIndex; n++)
+                    if (timeColumn > values.Length - 1)
                     {
-                        string[] values = rawData[n].Split(',');
-
-                        if ((timeColumn > dataColumn ? timeColumn : dataColumn) > values.Length - 1)
-                        {
-                            lock (locker) if (errorTemp != "E002") errorTemp = "E002";
-                        }
-                        else
-                        {
-                            if (double.TryParse(values[timeColumn].Trim(), out double timeTemp) && double.TryParse(values[dataColumn].Trim(), out double dataTemp))
-                            {
-                                timeListTemp[n] = timeTemp;
-                                dataListTemp[n] = dataTemp;
-                            }
-                            else lock (locker) if (errorTemp != "E001") errorTemp = "E001";
-                        }
+                        lock (locker)
+                            if (errorTemp != "E002") errorTemp = "E002";
+                        return double.MinValue;
                     }
-                });
-                tasks.Add(task);
+                    else
+                    {
+                        if (double.TryParse(values[timeColumn].Trim(), out double temp))
+                        {
+                            return temp;
+                        }
+                        else if (errorTemp != "E001")
+                            lock (locker) errorTemp = "E001";
+                        return double.MinValue;
+                    }
+                })
+            );
+            dataList = new List<double>(
+                multiFor.ForMulti(rawData, 0, length - 1, (x, i) =>
+                {
+                    string[] values = x.Split(',');
+
+                    if (dataColumn > values.Length - 1)
+                    {
+                        lock (locker)
+                            if (errorTemp != "E002") errorTemp = "E002";
+                        return double.MinValue;
+                    }
+                    else
+                    {
+                        if (double.TryParse(values[dataColumn].Trim(), out double temp))
+                        {
+                            return temp;
+                        }
+                        else if (errorTemp != "E001")
+                            lock (locker) errorTemp = "E001";
+                        return double.MinValue;
+                    }
+                })
+            );
+            int howManyDelete = 0;
+            for (int i = 0; i < length - howManyDelete; i++)
+            {
+                if (timeList[i] == double.MinValue || dataList[i] == double.MinValue)
+                {
+                    timeList.RemoveAt(i - howManyDelete);
+                    dataList.RemoveAt(i - howManyDelete);
+                    howManyDelete++;
+                    i--;
+                }
             }
 
-            Task.WaitAll(tasks.ToArray());
-
-            dataList = new List<double>(dataListTemp);
-            timeList = new List<double>(timeListTemp);
             error = errorTemp;
 
             if (timeList.Count < 1) error = "E004";
@@ -168,6 +183,7 @@ namespace MainProcess
             const int burnOutMargin = 1000;
             double offset = 0;
             double thrustMax = thrustList.Max();
+            double timeMin = timeList.Min();
             ignitionTimeIndex = 0;
             burnOutTimeIndex = timeList.Count - 1;
             int trialCount = 0;
@@ -239,9 +255,19 @@ namespace MainProcess
                         if (trialCount == 0)
                         {
                             error = "E012";
-                            double floorMaxTime = Math.Floor((timeListTemp[thrustListTemp.IndexOf(thrustMax)] - timeListTemp.Min()) * 100) * 0.01;
-                            DataCropping(timeListTemp, thrustListTemp, out timeListTemp, out thrustListTemp, floorMaxTime, 0.0);
-                            autoSkipTime = floorMaxTime;
+                            double floorMaxTime = Math.Floor((timeListTemp[thrustListTemp.IndexOf(thrustMax)] - timeMin) * 100) * 0.01;
+                            int skipTimeIndex = 0;
+                            for (int i = 0; i < timeListTemp.Count; i++)
+                            {
+                                if (timeListTemp[i] > floorMaxTime + timeMin)
+                                {
+                                    skipTimeIndex = i;
+                                    break;
+                                }
+                            }
+                            autoSkipTime = timeListTemp[skipTimeIndex] - timeMin;
+                            timeListTemp = timeListTemp.Skip(skipTimeIndex).ToList();
+                            thrustListTemp = thrustListTemp.Skip(skipTimeIndex).ToList();
                             skipTime.Value = (decimal)autoSkipTime * 1000;
                             skipTime.Refresh();
                             thrustMax = thrustListTemp.Max();
@@ -251,8 +277,19 @@ namespace MainProcess
                         }
                         else
                         { //上記の処理でもうまくいかなかった場合0.01秒ずつスキップしていく
-                            DataCropping(timeListTemp, thrustListTemp, out timeListTemp, out thrustListTemp, 0.01, 0.0);
-                            autoSkipTime += 0.01;
+                            int skipTimeIndex = 0;
+                            timeMin = timeListTemp[0];
+                            for (int i = 0; i < timeListTemp.Count; i++)
+                            {
+                                if (timeListTemp[i] > 0.01 + timeListTemp[0])
+                                {
+                                    skipTimeIndex = i;
+                                    break;
+                                }
+                            }
+                            autoSkipTime += timeListTemp[skipTimeIndex] - timeMin;
+                            timeListTemp = timeListTemp.Skip(skipTimeIndex).ToList();
+                            thrustListTemp = thrustListTemp.Skip(skipTimeIndex).ToList();
                             skipTime.Value = (decimal)autoSkipTime * 1000;
                             skipTime.Refresh();
                             thrustMax = thrustListTemp.Max();
@@ -410,11 +447,14 @@ namespace MainProcess
             int ignitionTimeIndex;
             int burnOutTimeIndex;
             double offset;
+            double thrustMax;
+            double timeWhenThrustMax;
             double impulse;
-            var timeList = new List<double>();
-            var thrustList = new List<double>();
-            var filteredSignalList = new List<double>();
-            var peakProtection = new List<double>();
+            double averageThrust;
+            List<double> timeList;
+            List<double> thrustList;
+            List<double> filteredSignalList;
+            List<double> peakProtection;
 
             toolStripStatus.Text = "File loading";
             Application.DoEvents();
@@ -494,13 +534,10 @@ namespace MainProcess
 
             do
             {
-                filteredSignalList = thrustList;
-
                 toolStripStatus.Text = "Denoised data generating";
                 Application.DoEvents();
 
-                var filteredSignal = new Filtering.SavitzkyGolayFilter(21, 4).Process(filteredSignalList.ToArray());
-                filteredSignalList = filteredSignal.ToList();
+                filteredSignalList = new List<double>(new DataProcessing.SavitzkyGolayFilter(21, 4).Process(thrustList.ToArray()));
 
                 offset = GetOffset(filteredSignalList);
 
@@ -559,17 +596,17 @@ namespace MainProcess
                 timeList = timeList.Select(i => i + maxTime[0] - maxTime[1]).ToList();
             }
 
-            var thrustMax = thrustList.Max();
-            var timeWhenThrustMax = timeList[thrustList.IndexOf(thrustMax)];
+            thrustMax = thrustList.Max();
+            timeWhenThrustMax = timeList[thrustList.IndexOf(thrustMax)];
 
             peakProtection = PeakProtection(filteredSignalList, 80);
 
-            var unfilteredSignalList = new List<double>(thrustList);
+            impulse = GetImpulse(timeList, thrustList, ignitionTimeIndex, burnOutTimeIndex);
+
+            averageThrust = GetAverage(thrustList, ignitionTimeIndex, burnOutTimeIndex);
 
             if (denoise.Checked)
                 thrustList = thrustList.Select((x, i) => x * peakProtection[i] + filteredSignalList[i] * (1 - peakProtection[i])).ToList();
-
-            impulse = GetImpulse(timeList, unfilteredSignalList, ignitionTimeIndex, burnOutTimeIndex);
 
             ////////////////////////////////////////////////////////////////データ加工終了。以下描画処理////////////////////////////////////////////////////////////////
 
@@ -594,7 +631,7 @@ namespace MainProcess
                 if (isPlotMax.Checked && !showPeakProtectionIntensity.Checked)
                 {
                     var maxMarker = formsPlot1.Plot.AddMarker(timeWhenThrustMax, thrustMax, MarkerShape.filledCircle, 5, Color.Red);
-                    maxMarker.Text = "Max(" + graphTitle + "): " + thrustList.Max().ToString("F3") + " N";
+                    maxMarker.Text = "Max(" + graphTitle + "): " + thrustMax.ToString("F3") + " N";
                     maxMarker.TextFont.Color = Color.Black;
                     maxMarker.TextFont.Alignment = Alignment.MiddleLeft;
                     maxMarker.TextFont.Size = 28;
@@ -637,7 +674,6 @@ namespace MainProcess
             {
                 if (isPlotAverageThrust.Checked && !showPeakProtectionIntensity.Checked)
                 {
-                    double averageThrust = GetAverage(unfilteredSignalList, ignitionTimeIndex, burnOutTimeIndex);
 
                     var averageThrustLine = formsPlot1.Plot.AddHorizontalLine(averageThrust);
                     averageThrustLine.LineWidth = 1;
@@ -891,108 +927,6 @@ namespace MainProcess
         private void ToolStripStatus_Click(object sender, EventArgs e)
         {
 
-        }
-    }
-}
-namespace Filtering
-{
-    /// <summary>
-    /// <para>Implements a Savitzky-Golay smoothing filter, as found in [1].</para>
-    /// <para>[1] Sophocles J.Orfanidis. 1995. Introduction to Signal Processing. Prentice-Hall, Inc., Upper Saddle River, NJ, USA.</para>
-    /// </summary>
-    internal sealed class SavitzkyGolayFilter
-    {
-        private readonly int sidePoints;
-
-        private readonly Matrix<double> coefficients;
-
-        internal SavitzkyGolayFilter(int sidePoints, int polynomialOrder)
-        {
-            this.sidePoints = sidePoints;
-            double[,] a = new double[(sidePoints << 1) + 1, polynomialOrder + 1];
-
-            Parallel.For(-sidePoints, sidePoints + 1, m =>
-            {
-                for (int i = 0; i <= polynomialOrder; ++i)
-                {
-                    a[m + sidePoints, i] = Math.Pow(m, i);
-                }
-            });
-
-            Matrix<double> s = Matrix<double>.Build.DenseOfArray(a);
-            coefficients = s.Multiply(s.TransposeThisAndMultiply(s).Inverse()).Multiply(s.Transpose());
-        }
-
-        /// <summary>
-        /// Smoothes the input samples.
-        /// </summary>
-        /// <param name="samples"></param>
-        /// <returns></returns>
-        internal double[] Process(double[] samples)
-        {
-            int length = samples.Length;
-            double[] output = new double[length];
-            int frameSize = (sidePoints << 1) + 1;
-
-            Parallel.Invoke(() =>
-            {
-                double[] frame = new double[frameSize];
-                Array.Copy(samples, frame, frameSize);
-
-                for (int i = 0; i < sidePoints; ++i)
-                {
-                    output[i] = coefficients.Column(i).DotProduct(Vector<double>.Build.DenseOfArray(frame));
-                }
-            }, () =>
-            {
-                int loopCount = length - ((sidePoints + 1) << 1);
-                int threadCount = Environment.ProcessorCount;
-                int chunkSize = loopCount / threadCount;
-
-                var tasks = new List<Task>();
-
-                for (int i = 0; i < threadCount; i++)
-                {
-                    int startIndex = i * chunkSize;
-                    int endIndex = (i + 1) * chunkSize;
-                    if (i == threadCount - 1)
-                    {
-                        endIndex = loopCount;
-                    }
-
-                    var task = Task.Run(() =>
-                    {
-                        double[] frame = new double[frameSize];
-                        for (int n = startIndex + sidePoints; n < endIndex + sidePoints; n++)
-                        {
-                            Array.ConstrainedCopy(samples, n - sidePoints, frame, 0, frameSize);
-                            output[n] = coefficients.Column(sidePoints).DotProduct(Vector<double>.Build.DenseOfArray(frame));
-                        }
-                    });
-                    tasks.Add(task);
-                }
-
-                Task.WaitAll(tasks.ToArray());
-                /*
-                //上記プログラムは下記プログラムを並列処理化したもの
-                for (int n = sidePoints; n < length - sidePoints; ++n)
-                {
-                    Array.ConstrainedCopy(samples, n - sidePoints, frame, 0, frameSize);
-                    output[n] = coefficients.Column(sidePoints).DotProduct(Vector<double>.Build.DenseOfArray(frame));
-                }
-                */
-            }, () =>
-            {
-                double[] frame = new double[frameSize];
-                Array.ConstrainedCopy(samples, length - frameSize, frame, 0, frameSize);
-
-                for (int i = 0; i < sidePoints; ++i)
-                {
-                    output[length - sidePoints + i] = coefficients.Column(sidePoints + 1 + i).DotProduct(Vector<double>.Build.Dense(frame));
-                }
-            });
-
-            return output;
         }
     }
 }
