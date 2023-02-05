@@ -20,7 +20,7 @@
 		{
 
 		}
-		internal List<outType> ForMulti<inType, outType>(List<inType> array, int startIndex, int endIndex, Func<inType, int, outType> actionForLoop)
+		internal static List<outType?> ForMulti<inType, outType>(List<inType> array, int startIndex, int endIndex, Func<inType, int, outType> actionForLoop)
 			where outType : IComparable
 			where inType : IComparable
 		{
@@ -36,7 +36,7 @@
 
 			loopCount = endIndex - startIndex + 1;
 
-			var result = new List<outType>(Enumerable.Repeat(default(outType), loopCount));
+			var result = new List<outType?>(Enumerable.Repeat(default(outType), loopCount));
 
 			int threadCount = Environment.ProcessorCount;
 			int chunkSize = loopCount / threadCount;

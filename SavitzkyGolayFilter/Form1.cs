@@ -2,7 +2,7 @@
 
 using GraphPlotter;
 using ScottPlot;
-using System.Collections.Generic;
+using ScottPlot.Plottable;
 using System.Data;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
@@ -11,22 +11,76 @@ namespace MainProcess
 {
     public partial class Form1 : Form
     {
+        private enum GraphType : byte
+        {
+            maxMarker,
+            impulseAno,
+            graphDenoisedVsRaw,
+            graph,
+            peakProtectionIntensityGraph,
+            averageThrustLine,
+            burnTimeAno,
+            fill
+        }
+
+        string fileName;
+        string previousFileName;
+        uint countGraphs;
+        uint countAnnotation;
+        uint countBurnTimes;
+        double[] maxTime;
+        bool checkBoxWarming;
+        double graphXLeft;
+        double graphXRight;
+        private DataProcessing.DataProcessing data;
+        bool isFileLoaded;
+        bool isGraphDrawn;
+        string graphTitle;
+        readonly bool[] isDeleteGraphs;
+        readonly byte howManyGraphTypes = (byte)Enum.GetValues(typeof(GraphType)).Length;
+        MarkerPlot maxMarker;
+        Annotation impulseAno;
+        SignalPlotXY graphDenoisedVsRaw;
+        SignalPlotXY graph;
+        SignalPlotXY peakProtectionIntensityGraph;
+        HLine averageThrustLine;
+        Bracket burnTimeAno;
+        Polygon fill;
+        bool isCanUndo;
+
         public Form1()
         {
             InitializeComponent();
+            fileName = "";
+            countGraphs = 0;
+            maxTime = new double[2];
+            countBurnTimes = 0;
+            skipTime.Value = 0;
+            cutoffTime.Value = 0;
+            previousFileName = "";
+            isFileLoaded = false;
+            isGraphDrawn = false;
+            data = new DataProcessing.DataProcessing(this, (uint)(timeColumnNum.Value - 1), (uint)(dataColumnNum.Value - 1));
+            countAnnotation = 0;
+            checkBoxWarming = false;
+            graphXLeft = 0;
+            graphXRight = 0;
+            graphTitle = "";
+            isDeleteGraphs = new bool[howManyGraphTypes];
+            for (int i = 0; i < howManyGraphTypes; i++)
+            {
+                isDeleteGraphs[i] = false;
+            }
+            maxMarker = new MarkerPlot();
+            impulseAno = new Annotation();
+            graphDenoisedVsRaw = new SignalPlotXY();
+            graph = new SignalPlotXY();
+            peakProtectionIntensityGraph = new SignalPlotXY();
+            averageThrustLine = new HLine();
+            burnTimeAno = new Bracket(0, 0, 0, 0);
+            fill = new Polygon(new double[1], new double[1]);
+            isCanUndo = false;
         }
-
-        string fileName = "";
-        string previousFileName = "";
-        uint countGraphs = 0;
-        uint countAnnotation = 0;
-        uint countBurnTimes = 0;
-        double[] maxTime = new double[2];
-        bool checkBoxWarming = false;
-        double graphXLeft = 0;
-        double graphXRight = 0;
-        private DataProcessing.DataProcessing data;
-        bool isFileLoaded = false;
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -56,6 +110,10 @@ namespace MainProcess
             sw.Start();
 #endif
 
+            for (int i = 0; i < howManyGraphTypes; i++)
+            {
+                isDeleteGraphs[i] = false;
+            }
             if (fileName == "")
             {
                 if (MessageBox.Show("ファイルが読み込まれていません。\n読み込みますか？", "注意", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
@@ -187,7 +245,7 @@ namespace MainProcess
             data.timeWhenThrustMax = data.timeList[data.thrustList.IndexOf(data.thrustMax)];
 
             Parallel.Invoke(
-                () => data.PeakProtectionIntensity(80, peakProtectionIntensity.Value),
+                () => data.PeakProtectionIntensity(80, peakProtectionIntensity.Value / 4.0),
                 () => data.GetImpulse(data.ignitionTimeIndex, data.burnOutTimeIndex),
                 () => data.GetAverage(data.ignitionTimeIndex, data.burnOutTimeIndex)
                 );
@@ -195,43 +253,49 @@ namespace MainProcess
             var unfilteredThrustList = data.thrustList;
 
             if (denoise.Checked || DenoisedVsRaw.Checked)
-                data.thrustList = data.thrustList.Select((x, i) => x * data.peakProtection[i] + data.filteredThrustList[i] * (1 - data.peakProtection[i])).ToList();
+                data.SetPeakProtectedThrustList();
 
             ////////////////////////////////////////////////////////////////データ加工終了。以下描画処理////////////////////////////////////////////////////////////////
 
             toolStripStatus.Text = "Graph is plotting";
             Application.DoEvents();
 
-            string graphTitle = "";
+            bool tempIsGraphDrawn = isGraphDrawn;
 
+            var fs = new GraphName();
             if (previousFileName != fileName)
-            {
-                var fs = new GraphName();
-                while (graphTitle == "")
+                do
                 {
                     DialogResult dr = fs.ShowDialog();
                     graphTitle = fs.value;
                     if (graphTitle == "")
                         MessageBox.Show("グラフの名前を入力してください。", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                } while (graphTitle == "" && previousFileName != fileName);
 
-                fs.Dispose();
+            fs.Dispose();
+
+            if (!isGraphDrawn)
+            {
 
                 if (isPlotMax.Checked && !showPeakProtectionIntensity.Checked)
                 {
-                    var maxMarker = formsPlot1.Plot.AddMarker(data.timeWhenThrustMax, data.thrustMax, MarkerShape.filledCircle, 5, Color.Red);
+                    maxMarker = formsPlot1.Plot.AddMarker(data.timeWhenThrustMax, data.thrustMax, MarkerShape.filledCircle, 5, Color.Red);
                     maxMarker.Text = "Max(" + graphTitle + "): " + data.thrustMax.ToString("F3") + " N";
                     maxMarker.TextFont.Color = Color.Black;
                     maxMarker.TextFont.Alignment = Alignment.MiddleLeft;
                     maxMarker.TextFont.Size = 28;
+
+                    isDeleteGraphs[(byte)GraphType.maxMarker] = true;
                 }
 
                 if (isPlotImpulse.Checked && !showPeakProtectionIntensity.Checked)
                 {
-                    var impulseAno = formsPlot1.Plot.AddAnnotation(graphTitle + ": " + data.impulse.ToString("F3") + " N⋅s", -10, 10 + 50 * countAnnotation);
+                    impulseAno = formsPlot1.Plot.AddAnnotation(graphTitle + ": " + data.impulse.ToString("F3") + " N⋅s", -10, 10 + 50 * countAnnotation);
                     impulseAno.Font.Size = 28;
                     impulseAno.BackgroundColor = Color.FromArgb(25, Color.Black);
                     impulseAno.Shadow = false;
+
+                    isDeleteGraphs[(byte)GraphType.impulseAno] = true;
 
                     countAnnotation++;
                 }
@@ -243,48 +307,62 @@ namespace MainProcess
             {
                 if (DenoisedVsRaw.Checked)
                 {
-                    var graphDenoisedVsRaw = formsPlot1.Plot.AddSignalXY(data.timeList.ToArray(), unfilteredThrustList.ToArray(), label: graphTitle + "(original)");
+                    formsPlot1.Plot.Remove(graphDenoisedVsRaw);
+                    graphDenoisedVsRaw = formsPlot1.Plot.AddSignalXY(data.timeList.ToArray(), unfilteredThrustList.ToArray(), label: graphTitle + "(original)");
                     graphDenoisedVsRaw.LineWidth = 3;
                     graphDenoisedVsRaw.LineColor = Color.FromArgb(90, graphColor);
+
+                    isDeleteGraphs[(byte)GraphType.graphDenoisedVsRaw] = true;
                 }
-                var graph = formsPlot1.Plot.AddSignalXY(data.timeList.ToArray(), data.thrustList.ToArray(), label: graphTitle + (DenoisedVsRaw.Checked ? "(denoised)" : ""));
+                graph = formsPlot1.Plot.AddSignalXY(data.timeList.ToArray(), data.thrustList.ToArray(), label: graphTitle + (DenoisedVsRaw.Checked ? "(denoised)" : ""));
                 graph.LineWidth = 2;
                 graph.LineColor = graphColor;
 
+                isDeleteGraphs[(byte)GraphType.graph] = true;
+
                 formsPlot1.Plot.YAxis.Label("Thrust [N]");
                 formsPlot1.Plot.XAxis.Label("Time [s]");
+
+                tempIsGraphDrawn = true;
+                countGraphs++;
             }
             else
             {
-                var peakProtectionIntensityGraph = formsPlot1.Plot.AddSignalXY(data.timeList.ToArray(), data.peakProtection.ToArray(), label: "Peak protection intensity of the " + graphTitle);
+                peakProtectionIntensityGraph = formsPlot1.Plot.AddSignalXY(data.timeList.ToArray(), data.peakProtection.ToArray(), label: "Peak protection intensity of the " + graphTitle);
                 peakProtectionIntensityGraph.YAxisIndex = 1;
                 peakProtectionIntensityGraph.XAxisIndex = 0;
+
+                isDeleteGraphs[(byte)GraphType.peakProtectionIntensityGraph] = true;
 
                 formsPlot1.Plot.YAxis2.Label("Peak protection intensity");
                 formsPlot1.Plot.XAxis.Label("Time [s]");
                 formsPlot1.Plot.YAxis2.Ticks(true);
             }
 
-            if (previousFileName != fileName)
+            if (!isGraphDrawn)
             {
                 if (isPlotAverageThrust.Checked && !showPeakProtectionIntensity.Checked)
                 {
 
-                    var averageThrustLine = formsPlot1.Plot.AddHorizontalLine(data.averageThrust);
+                    averageThrustLine = formsPlot1.Plot.AddHorizontalLine(data.averageThrust);
                     averageThrustLine.LineWidth = 1;
                     averageThrustLine.PositionLabel = true;
                     averageThrustLine.Color = graphColor;
                     averageThrustLine.LineStyle = LineStyle.Dash;
                     averageThrustLine.PositionLabelBackground = graphColor;
+
+                    isDeleteGraphs[(byte)GraphType.averageThrustLine] = true;
                 }
 
                 if (isPlotBurnTime.Checked && !showPeakProtectionIntensity.Checked)
                 {
-                    double margin = (data.thrustList.Max() - data.offset) * 0.06 * countBurnTimes;
-                    var burnTimeAno = formsPlot1.Plot.AddBracket(data.timeList[data.ignitionTimeIndex], -margin, data.timeList[data.burnOutTimeIndex], -margin, graphTitle + ": " + (data.timeList[data.burnOutTimeIndex] - data.timeList[data.ignitionTimeIndex]).ToString("F2") + " s");
+                    double margin = (data.thrustList.Max() - (offsetRemoval.Checked ? 0 : data.offset)) * 0.06 * countBurnTimes;
+                    burnTimeAno = formsPlot1.Plot.AddBracket(data.timeList[data.ignitionTimeIndex], -margin, data.timeList[data.burnOutTimeIndex], -margin, graphTitle + ": " + (data.timeList[data.burnOutTimeIndex] - data.timeList[data.ignitionTimeIndex]).ToString("F2") + " s");
                     burnTimeAno.Font.Size = 22;
 
-                    if (countGraphs == 0)
+                    isDeleteGraphs[(byte)GraphType.burnTimeAno] = true;
+
+                    if (countGraphs == 1)
                     {
                         var timeListForFill = data.timeList
                             .Skip(data.ignitionTimeIndex)
@@ -297,14 +375,15 @@ namespace MainProcess
                             .ToArray();
 
                         if (data.burnOutTimeIndex != data.ignitionTimeIndex)
-                            formsPlot1.Plot.AddFill(timeListForFill, thrustListForFill, 0, Color.FromArgb(0x30000000));
+                        {
+                            fill = formsPlot1.Plot.AddFill(timeListForFill, thrustListForFill, 0, Color.FromArgb(0x30000000));
+                            isDeleteGraphs[(byte)GraphType.fill] = true;
+                        }
                     }
 
                     countBurnTimes++;
                 }
             }
-
-            countGraphs++;
 
             graphXLeft = data.timeList[data.ignitionTimeIndex] - (data.timeList[data.burnOutTimeIndex] - data.timeList[data.ignitionTimeIndex]) * 0.04;
             graphXRight = data.timeList[data.burnOutTimeIndex] + (data.timeList[data.burnOutTimeIndex] - data.timeList[data.ignitionTimeIndex]) * 0.08;
@@ -328,8 +407,11 @@ namespace MainProcess
             }
 
             previousFileName = fileName;
+            isGraphDrawn = tempIsGraphDrawn;
 
             toolStripStatus.Text = "Done";
+
+            isCanUndo = true;
 
 #if TIMER
             sw.Stop();
@@ -339,7 +421,7 @@ namespace MainProcess
 
         private void Threshold_Scroll(object sender, EventArgs e)
         {
-            label2.Text = (peakProtectionIntensity.Value / 2.0).ToString("F1");
+            label2.Text = (peakProtectionIntensity.Value / 4.0).ToString("F2");
         }
 
         private void IgniThreshold_Scroll(object sender, EventArgs e)
@@ -406,11 +488,12 @@ namespace MainProcess
                 Application.DoEvents();
 
                 skipTime.Value = 0;
+
+                isGraphDrawn = false;
+                isFileLoaded = false;
             }
 
             ofd.Dispose();
-
-            isFileLoaded = false;
         }
 
         private void SaveFigure_Click(object sender, EventArgs e)
@@ -457,6 +540,7 @@ namespace MainProcess
             cutoffTime.Value = 0;
             previousFileName = "";
             isFileLoaded = false;
+            isGraphDrawn = false;
             data = new DataProcessing.DataProcessing(this, (uint)(timeColumnNum.Value - 1), (uint)(dataColumnNum.Value - 1));
             if (fileName != "") data.SetFile(fileName);
         }
@@ -550,6 +634,11 @@ namespace MainProcess
             ShowCheckBoxWarming();
         }
 
+        private void DenoisedVsRaw_CheckedChanged(object sender, EventArgs e)
+        {
+            ShowCheckBoxWarming();
+        }
+
         private void ShowReadme_Click(object sender, EventArgs e)
         {
             var startInfo = new ProcessStartInfo("https://github.com/CramelIffy/GraphPlotter")
@@ -562,6 +651,38 @@ namespace MainProcess
         private void ToolStripStatus_Click(object sender, EventArgs e)
         {
 
+        }
+
+        private void UndoGraph_Click(object sender, EventArgs e)
+        {
+            if(isCanUndo)
+            {
+                maxTime = new double[2];
+
+                var temp = formsPlot1.Plot;
+                if (isDeleteGraphs[0]) { temp.Remove(maxMarker); }
+                if (isDeleteGraphs[1]) { temp.Remove(impulseAno); countAnnotation--; }
+                if (isDeleteGraphs[2]) { temp.Remove(graphDenoisedVsRaw); }
+                if (isDeleteGraphs[3]) { temp.Remove(graph); countGraphs--; if (countGraphs == 0) maxTime[1] = 0; }
+                if (isDeleteGraphs[4]) { temp.Remove(peakProtectionIntensityGraph); }
+                if (isDeleteGraphs[5]) { temp.Remove(averageThrustLine); }
+                if (isDeleteGraphs[6]) { temp.Remove(burnTimeAno); countBurnTimes--; }
+                if (isDeleteGraphs[6]) { temp.Remove(fill); }
+                formsPlot1.Refresh();
+
+                for (int i = 0; i < howManyGraphTypes; i++)
+                {
+                    isDeleteGraphs[i] = false;
+                }
+                fileName = "";
+                isCanUndo = false;
+            }
+            else
+            {
+                MessageBox.Show("Undoは1度しかできません。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                toolStripStatus.Text = "ERROR";
+                Application.DoEvents();
+            }
         }
     }
 }
