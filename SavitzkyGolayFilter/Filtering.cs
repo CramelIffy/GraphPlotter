@@ -348,7 +348,8 @@ namespace DataProcessing
 				double temp = 1 / (1 + Math.Exp(-(x - IntensityValue) * 20 / max));
 				return temp > 0.5 ? 1.0 : Math.Pow(temp * 2, 4) / 16;
 			});
-		}
+
+        }
 
 		internal void SetPeakProtectedThrustList()
 		{
