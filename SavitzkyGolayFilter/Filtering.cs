@@ -125,7 +125,7 @@ namespace DataProcessing
 				);
 			});
 
-			int howManyDelete = 0;
+            int howManyDelete = 0;
 			for (int i = 0; i < length - howManyDelete; i++)
 			{
 				if (timeList[i] == double.MinValue || dataList[i] == double.MinValue)
@@ -476,7 +476,9 @@ namespace DataProcessing
 			var temp = new List<double>(data);
 			var result = new List<double>(data);
 
-			for (int i = 0; i < range - 1; i++) temp.Insert(0, 0);
+			temp.Reverse();
+            for (int i = 0; i < range - 1; i++) temp.Add(0.0);
+			temp.Reverse();
 			Parallel.For(0, temp.Count - (int)range - 1, i =>
 			{
 				double sum = 0;
