@@ -673,7 +673,15 @@ namespace MainProcess
                 if (countGraphs == 0) maxTime[1] = 0;
                 countBurnTimes = (uint)((Stack<Bracket?>)graphs[(byte)GraphType.burnTimeAno]).Where(x => x != null).Count();
 
-                PlotData.Add(((Stack<SignalPlotXY?>)graphs[(byte)GraphType.graphDenoisedVsRaw]).Peek());
+                try
+                {
+                    PlotData.Add(((Stack<SignalPlotXY?>)graphs[(byte)GraphType.graphDenoisedVsRaw]).Peek());
+                }catch(InvalidOperationException)
+                {
+                    //グラフを削除した結果全グラフがなくなったときに実行されるコード
+                    //グラフが存在しないのにStackでPeek()を実行するとエラーが発生するのを利用している
+                    graphInit.PerformClick();
+                }
 
                 formsPlot1.Refresh();
 
