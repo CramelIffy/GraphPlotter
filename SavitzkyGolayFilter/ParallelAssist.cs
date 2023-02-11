@@ -5,26 +5,26 @@ namespace ParallelAssist
 {
 	internal class ParallelAssist
 	{
-		/// <summary>
-		/// A function that divides the process using a For loop into the number of available processors and executes each For loop using multi-thread processing.
-		/// Note: In the return value, the minimum value of type double is treated as if it could not be converted.
-		/// </summary>
-		/// <typeparam name="inType"></typeparam>
-		/// <typeparam name="outType"></typeparam>
-		/// <param name="array">Source data</param>
-		/// <param name="startIndex"></param>
-		/// <param name="endIndex"></param>
-		/// <param name="actionForLoop">
-		/// Processing.
-		/// Note: In the return value, the minimum value of type double is treated as if it could not be converted.
-		/// </param>
-		/// <returns></returns>
-		internal ParallelAssist()
-		{
+        internal ParallelAssist()
+        {
 
-		}
+        }
 
-		internal static List<outType?> ForMulti<inType, outType>(List<inType> array, int startIndex, int endIndex, Func<inType, int, outType> actionForLoop)
+        /// <summary>
+        /// A function that divides the process using a For loop into the number of available processors and executes each For loop using multi-thread processing.
+        /// Note: In the return value, the minimum value of type double is treated as if it could not be converted.
+        /// </summary>
+        /// <typeparam name="inType"></typeparam>
+        /// <typeparam name="outType"></typeparam>
+        /// <param name="array">Source data</param>
+        /// <param name="startIndex"></param>
+        /// <param name="endIndex"></param>
+        /// <param name="actionForLoop">
+        /// Processing.
+        /// Note: In the return value, the minimum value of type double is treated as if it could not be converted.
+        /// </param>
+        /// <returns></returns>
+        internal static List<outType?> ForMulti<inType, outType>(List<inType> array, int startIndex, int endIndex, Func<inType, int, outType> actionForLoop)
 			where outType : IComparable
 			where inType : IComparable
 		{

@@ -38,7 +38,7 @@ namespace MainProcess
         string graphTitle;
         readonly bool[] isDeleteGraphs;
         readonly byte howManyGraphTypes = (byte)Enum.GetValues(typeof(GraphType)).Length;
-        List<object> graphs;
+        readonly List<object> graphs;
 
         public Form1()
         {
