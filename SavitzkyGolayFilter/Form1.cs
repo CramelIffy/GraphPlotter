@@ -38,15 +38,7 @@ namespace MainProcess
         string graphTitle;
         readonly bool[] isDeleteGraphs;
         readonly byte howManyGraphTypes = (byte)Enum.GetValues(typeof(GraphType)).Length;
-        MarkerPlot maxMarker;
-        Annotation impulseAno;
-        SignalPlotXY graphDenoisedVsRaw;
-        SignalPlotXY graph;
-        SignalPlotXY peakProtectionIntensityGraph;
-        HLine averageThrustLine;
-        Bracket burnTimeAno;
-        Polygon fill;
-        bool isCanUndo;
+        List<object> graphs;
 
         public Form1()
         {
@@ -71,15 +63,17 @@ namespace MainProcess
             {
                 isDeleteGraphs[i] = false;
             }
-            maxMarker = new MarkerPlot();
-            impulseAno = new Annotation();
-            graphDenoisedVsRaw = new SignalPlotXY();
-            graph = new SignalPlotXY();
-            peakProtectionIntensityGraph = new SignalPlotXY();
-            averageThrustLine = new HLine();
-            burnTimeAno = new Bracket(0, 0, 0, 0);
-            fill = new Polygon(new double[1], new double[1]);
-            isCanUndo = false;
+            graphs = new List<object>()
+            {
+                new Stack<MarkerPlot?>(),
+                new Stack<Annotation?>(),
+                new Stack<SignalPlotXY?>(),
+                new Stack<SignalPlotXY?>(),
+                new Stack<SignalPlotXY?>(),
+                new Stack<HLine?>(),
+                new Stack<Bracket?>(),
+                new Stack<Polygon?>()
+            };
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -274,31 +268,35 @@ namespace MainProcess
 
             fs.Dispose();
 
-            if (!isGraphDrawn)
+            if (isPlotMax.Checked && !showPeakProtectionIntensity.Checked && !isGraphDrawn)
             {
+                var maxMarker = formsPlot1.Plot.AddMarker(data.timeWhenThrustMax, data.thrustMax, MarkerShape.filledCircle, 5, Color.Red);
+                maxMarker.Text = "Max(" + graphTitle + "): " + data.thrustMax.ToString("F3") + " N";
+                maxMarker.TextFont.Color = Color.Black;
+                maxMarker.TextFont.Alignment = Alignment.MiddleLeft;
+                maxMarker.TextFont.Size = 28;
 
-                if (isPlotMax.Checked && !showPeakProtectionIntensity.Checked)
-                {
-                    maxMarker = formsPlot1.Plot.AddMarker(data.timeWhenThrustMax, data.thrustMax, MarkerShape.filledCircle, 5, Color.Red);
-                    maxMarker.Text = "Max(" + graphTitle + "): " + data.thrustMax.ToString("F3") + " N";
-                    maxMarker.TextFont.Color = Color.Black;
-                    maxMarker.TextFont.Alignment = Alignment.MiddleLeft;
-                    maxMarker.TextFont.Size = 28;
+                ((Stack<MarkerPlot?>)graphs[(byte)GraphType.maxMarker]).Push(maxMarker);
+            }
+            else
+            {
+                ((Stack<MarkerPlot?>)graphs[(byte)GraphType.maxMarker]).Push(null);
+            }
 
-                    isDeleteGraphs[(byte)GraphType.maxMarker] = true;
-                }
+            if (isPlotImpulse.Checked && !showPeakProtectionIntensity.Checked && !isGraphDrawn)
+            {
+                var impulseAno = formsPlot1.Plot.AddAnnotation(graphTitle + ": " + data.impulse.ToString("F3") + " N⋅s", -10, 10 + 50 * countAnnotation);
+                impulseAno.Font.Size = 28;
+                impulseAno.BackgroundColor = Color.FromArgb(25, Color.Black);
+                impulseAno.Shadow = false;
 
-                if (isPlotImpulse.Checked && !showPeakProtectionIntensity.Checked)
-                {
-                    impulseAno = formsPlot1.Plot.AddAnnotation(graphTitle + ": " + data.impulse.ToString("F3") + " N⋅s", -10, 10 + 50 * countAnnotation);
-                    impulseAno.Font.Size = 28;
-                    impulseAno.BackgroundColor = Color.FromArgb(25, Color.Black);
-                    impulseAno.Shadow = false;
+                ((Stack<Annotation?>)graphs[(byte)GraphType.impulseAno]).Push(impulseAno);
 
-                    isDeleteGraphs[(byte)GraphType.impulseAno] = true;
-
-                    countAnnotation++;
-                }
+                countAnnotation++;
+            }
+            else
+            {
+                ((Stack<Annotation?>)graphs[(byte)GraphType.impulseAno]).Push(null);
             }
 
             var graphColor = Color.FromArgb(255, (int)(30 + countGraphs * 120) % 192, (int)(40 + countGraphs * 160) % 192, (int)(50 + countGraphs * 200) % 192);
@@ -307,18 +305,25 @@ namespace MainProcess
             {
                 if (DenoisedVsRaw.Checked)
                 {
-                    formsPlot1.Plot.Remove(graphDenoisedVsRaw);
-                    graphDenoisedVsRaw = formsPlot1.Plot.AddSignalXY(data.timeList.ToArray(), unfilteredThrustList.ToArray(), label: graphTitle + "(original)");
+                    foreach (var item in (Stack<SignalPlotXY?>)graphs[(byte)GraphType.graphDenoisedVsRaw])
+                        if (item != null) formsPlot1.Plot.Remove(item);
+
+                    var graphDenoisedVsRaw = formsPlot1.Plot.AddSignalXY(data.timeList.ToArray(), unfilteredThrustList.ToArray(), label: graphTitle + "(original)");
                     graphDenoisedVsRaw.LineWidth = 3;
                     graphDenoisedVsRaw.LineColor = Color.FromArgb(90, graphColor);
 
-                    isDeleteGraphs[(byte)GraphType.graphDenoisedVsRaw] = true;
+                    ((Stack<SignalPlotXY?>)graphs[(byte)GraphType.graphDenoisedVsRaw]).Push(graphDenoisedVsRaw);
                 }
-                graph = formsPlot1.Plot.AddSignalXY(data.timeList.ToArray(), data.thrustList.ToArray(), label: graphTitle + (DenoisedVsRaw.Checked ? "(denoised)" : ""));
+                else
+                {
+                    ((Stack<SignalPlotXY?>)graphs[(byte)GraphType.graphDenoisedVsRaw]).Push(null);
+                }
+                var graph = formsPlot1.Plot.AddSignalXY(data.timeList.ToArray(), data.thrustList.ToArray(), label: graphTitle + (DenoisedVsRaw.Checked ? "(denoised)" : ""));
                 graph.LineWidth = 2;
                 graph.LineColor = graphColor;
 
-                isDeleteGraphs[(byte)GraphType.graph] = true;
+                ((Stack<SignalPlotXY?>)graphs[(byte)GraphType.graph]).Push(graph);
+                ((Stack<SignalPlotXY?>)graphs[(byte)GraphType.peakProtectionIntensityGraph]).Push(null);
 
                 formsPlot1.Plot.YAxis.Label("Thrust [N]");
                 formsPlot1.Plot.XAxis.Label("Time [s]");
@@ -328,61 +333,58 @@ namespace MainProcess
             }
             else
             {
-                peakProtectionIntensityGraph = formsPlot1.Plot.AddSignalXY(data.timeList.ToArray(), data.peakProtection.ToArray(), label: "Peak protection intensity of the " + graphTitle);
+                var peakProtectionIntensityGraph = formsPlot1.Plot.AddSignalXY(data.timeList.ToArray(), data.peakProtection.ToArray(), label: "Peak protection intensity of the " + graphTitle);
                 peakProtectionIntensityGraph.YAxisIndex = 1;
                 peakProtectionIntensityGraph.XAxisIndex = 0;
 
-                isDeleteGraphs[(byte)GraphType.peakProtectionIntensityGraph] = true;
+                ((Stack<SignalPlotXY?>)graphs[(byte)GraphType.graphDenoisedVsRaw]).Push(null);
+                ((Stack<SignalPlotXY?>)graphs[(byte)GraphType.graph]).Push(null);
+                ((Stack<SignalPlotXY?>)graphs[(byte)GraphType.peakProtectionIntensityGraph]).Push(peakProtectionIntensityGraph);
 
                 formsPlot1.Plot.YAxis2.Label("Peak protection intensity");
                 formsPlot1.Plot.XAxis.Label("Time [s]");
                 formsPlot1.Plot.YAxis2.Ticks(true);
             }
 
-            if (!isGraphDrawn)
+            if (isPlotAverageThrust.Checked && !showPeakProtectionIntensity.Checked && !isGraphDrawn)
             {
-                if (isPlotAverageThrust.Checked && !showPeakProtectionIntensity.Checked)
-                {
+                var averageThrustLine = formsPlot1.Plot.AddHorizontalLine(data.averageThrust);
+                averageThrustLine.LineWidth = 1;
+                averageThrustLine.PositionLabel = true;
+                averageThrustLine.Color = graphColor;
+                averageThrustLine.LineStyle = LineStyle.Dash;
+                averageThrustLine.PositionLabelBackground = graphColor;
 
-                    averageThrustLine = formsPlot1.Plot.AddHorizontalLine(data.averageThrust);
-                    averageThrustLine.LineWidth = 1;
-                    averageThrustLine.PositionLabel = true;
-                    averageThrustLine.Color = graphColor;
-                    averageThrustLine.LineStyle = LineStyle.Dash;
-                    averageThrustLine.PositionLabelBackground = graphColor;
+                ((Stack<HLine?>)graphs[(byte)GraphType.averageThrustLine]).Push(averageThrustLine);
+            }
+            else
+            {
+                ((Stack<HLine?>)graphs[(byte)GraphType.averageThrustLine]).Push(null);
+            }
 
-                    isDeleteGraphs[(byte)GraphType.averageThrustLine] = true;
-                }
+            if (isPlotBurnTime.Checked && !showPeakProtectionIntensity.Checked && !isGraphDrawn)
+            {
+                double margin = (data.thrustList.Max() - (offsetRemoval.Checked ? 0 : data.offset)) * 0.06 * countBurnTimes;
 
-                if (isPlotBurnTime.Checked && !showPeakProtectionIntensity.Checked)
-                {
-                    double margin = (data.thrustList.Max() - (offsetRemoval.Checked ? 0 : data.offset)) * 0.06 * countBurnTimes;
-                    burnTimeAno = formsPlot1.Plot.AddBracket(data.timeList[data.ignitionTimeIndex], -margin, data.timeList[data.burnOutTimeIndex], -margin, graphTitle + ": " + (data.timeList[data.burnOutTimeIndex] - data.timeList[data.ignitionTimeIndex]).ToString("F2") + " s");
-                    burnTimeAno.Font.Size = 22;
+                var burnTimeAno = formsPlot1.Plot.AddBracket(data.timeList[data.ignitionTimeIndex], -margin, data.timeList[data.burnOutTimeIndex], -margin, graphTitle + ": " + (data.timeList[data.burnOutTimeIndex] - data.timeList[data.ignitionTimeIndex]).ToString("F2") + " s");
+                burnTimeAno.Font.Size = 22;
 
-                    isDeleteGraphs[(byte)GraphType.burnTimeAno] = true;
+                ((Stack<Bracket?>)graphs[(byte)GraphType.burnTimeAno]).Push(burnTimeAno);
 
-                    if (countGraphs == 1)
-                    {
-                        var timeListForFill = data.timeList
-                            .Skip(data.ignitionTimeIndex)
-                            .Take(data.burnOutTimeIndex - data.ignitionTimeIndex)
-                            .ToArray();
+                if (data.burnOutTimeIndex != data.ignitionTimeIndex && countGraphs == 1)
+                    ((Stack<Polygon?>)graphs[(byte)GraphType.fill]).Push
+                        (formsPlot1.Plot.AddFill
+                            (data.timeList.Skip(data.ignitionTimeIndex).Take(data.burnOutTimeIndex - data.ignitionTimeIndex).ToArray(),
+                            data.thrustList.Skip(data.ignitionTimeIndex).Take(data.burnOutTimeIndex - data.ignitionTimeIndex).ToArray(),
+                            0, Color.FromArgb(0x30000000)));
+                else ((Stack<Polygon?>)graphs[(byte)GraphType.fill]).Push(null);
 
-                        var thrustListForFill = data.thrustList
-                            .Skip(data.ignitionTimeIndex)
-                            .Take(data.burnOutTimeIndex - data.ignitionTimeIndex)
-                            .ToArray();
-
-                        if (data.burnOutTimeIndex != data.ignitionTimeIndex)
-                        {
-                            fill = formsPlot1.Plot.AddFill(timeListForFill, thrustListForFill, 0, Color.FromArgb(0x30000000));
-                            isDeleteGraphs[(byte)GraphType.fill] = true;
-                        }
-                    }
-
-                    countBurnTimes++;
-                }
+                countBurnTimes++;
+            }
+            else
+            {
+                ((Stack<Bracket?>)graphs[(byte)GraphType.burnTimeAno]).Push(null);
+                ((Stack<Polygon?>)graphs[(byte)GraphType.fill]).Push(null);
             }
 
             graphXLeft = data.timeList[data.ignitionTimeIndex] - (data.timeList[data.burnOutTimeIndex] - data.timeList[data.ignitionTimeIndex]) * 0.04;
@@ -410,8 +412,6 @@ namespace MainProcess
             isGraphDrawn = tempIsGraphDrawn;
 
             toolStripStatus.Text = "Done";
-
-            isCanUndo = true;
 
 #if TIMER
             sw.Stop();
@@ -655,31 +655,33 @@ namespace MainProcess
 
         private void UndoGraph_Click(object sender, EventArgs e)
         {
-            if(isCanUndo)
+            if (((Stack<SignalPlotXY?>)graphs[(byte)GraphType.graph]).Count > 0)
             {
-                maxTime = new double[2];
+                var PlotData = formsPlot1.Plot;
 
-                var temp = formsPlot1.Plot;
-                if (isDeleteGraphs[0]) { temp.Remove(maxMarker); }
-                if (isDeleteGraphs[1]) { temp.Remove(impulseAno); countAnnotation--; }
-                if (isDeleteGraphs[2]) { temp.Remove(graphDenoisedVsRaw); }
-                if (isDeleteGraphs[3]) { temp.Remove(graph); countGraphs--; if (countGraphs == 0) maxTime[1] = 0; }
-                if (isDeleteGraphs[4]) { temp.Remove(peakProtectionIntensityGraph); }
-                if (isDeleteGraphs[5]) { temp.Remove(averageThrustLine); }
-                if (isDeleteGraphs[6]) { temp.Remove(burnTimeAno); countBurnTimes--; }
-                if (isDeleteGraphs[6]) { temp.Remove(fill); }
+                PlotData.Remove(((Stack<MarkerPlot?>)graphs[(byte)GraphType.maxMarker]).Pop());
+                PlotData.Remove(((Stack<Annotation?>)graphs[(byte)GraphType.impulseAno]).Pop());
+                PlotData.Remove(((Stack<SignalPlotXY?>)graphs[(byte)GraphType.graphDenoisedVsRaw]).Pop());
+                PlotData.Remove(((Stack<SignalPlotXY?>)graphs[(byte)GraphType.graph]).Pop());
+                PlotData.Remove(((Stack<SignalPlotXY?>)graphs[(byte)GraphType.peakProtectionIntensityGraph]).Pop());
+                PlotData.Remove(((Stack<HLine?>)graphs[(byte)GraphType.averageThrustLine]).Pop());
+                PlotData.Remove(((Stack<Bracket?>)graphs[(byte)GraphType.burnTimeAno]).Pop());
+                PlotData.Remove(((Stack<Polygon?>)graphs[(byte)GraphType.fill]).Pop());
+
+                countAnnotation = (uint)((Stack<Annotation?>)graphs[(byte)GraphType.impulseAno]).Where(x => x != null).Count() + 1;
+                countGraphs = (uint)((Stack<SignalPlotXY?>)graphs[(byte)GraphType.graph]).Where(x => x != null).Count();
+                if (countGraphs == 0) maxTime[1] = 0;
+                countBurnTimes = (uint)((Stack<Bracket?>)graphs[(byte)GraphType.burnTimeAno]).Where(x => x != null).Count();
+
+                PlotData.Add(((Stack<SignalPlotXY?>)graphs[(byte)GraphType.graphDenoisedVsRaw]).Peek());
+
                 formsPlot1.Refresh();
 
-                for (int i = 0; i < howManyGraphTypes; i++)
-                {
-                    isDeleteGraphs[i] = false;
-                }
                 fileName = "";
-                isCanUndo = false;
             }
             else
             {
-                MessageBox.Show("Undoは1度しかできません。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("これ以上Undoできません。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 toolStripStatus.Text = "ERROR";
                 Application.DoEvents();
             }
