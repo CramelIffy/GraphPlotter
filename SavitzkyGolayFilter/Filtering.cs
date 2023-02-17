@@ -525,11 +525,6 @@ namespace DataProcessing
 			coefficients = s.Multiply(s.TransposeThisAndMultiply(s).Inverse()).Multiply(s.Transpose());
 		}
 
-		/// <summary>
-		/// Smoothes the input samples.
-		/// </summary>
-		/// <param name="samples"></param>
-		/// <returns></returns>
 		internal double[] Process(double[] samples)
 		{
 			int length = samples.Length;
