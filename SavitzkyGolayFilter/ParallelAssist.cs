@@ -12,16 +12,14 @@ namespace ParallelAssist
 
         /// <summary>
         /// A function that divides the process using a For loop into the number of available processors and executes each For loop using multi-thread processing.
-        /// Note: In the return value, the minimum value of type double is treated as if it could not be converted.
         /// </summary>
-        /// <typeparam name="inType"></typeparam>
-        /// <typeparam name="outType"></typeparam>
+        /// <typeparam name="inType">The type of the input List.</typeparam>
+        /// <typeparam name="outType">The type of the output List.</typeparam>
         /// <param name="array">Source data</param>
-        /// <param name="startIndex"></param>
-        /// <param name="endIndex"></param>
+        /// <param name="startIndex">Starting index of the processing range.</param>
+        /// <param name="endIndex">End index of the processing range.</param>
         /// <param name="actionForLoop">
-        /// Processing.
-        /// Note: In the return value, the minimum value of type double is treated as if it could not be converted.
+        /// Details of processing to be performed for each data.
         /// </param>
         /// <returns></returns>
         internal static List<outType?> ForMulti<inType, outType>(List<inType> array, int startIndex, int endIndex, Func<inType, int, outType> actionForLoop)
