@@ -18,8 +18,8 @@ namespace DataProcessing
 		internal List<double> filteredThrustList;
 		internal List<double> peakProtection;
 		internal List<double> peakProtectedthrustList;
-		internal string error = "E000";
-		private string fileName = "";
+		internal string error;
+		private string fileName;
 		private readonly uint timeColumnNum;
 		private readonly uint dataColumnNum;
 
@@ -34,7 +34,9 @@ namespace DataProcessing
 			filteredThrustList = new List<double>();
 			peakProtection = new List<double>();
 			peakProtectedthrustList = new List<double>();
-		}
+			error = "E000";
+			fileName = "";
+        }
 
 		internal void SetFile(string fileName)
 		{
