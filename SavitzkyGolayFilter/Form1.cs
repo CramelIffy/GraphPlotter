@@ -23,22 +23,22 @@ namespace MainProcess
             fill
         }
 
-        string fileName;
-        string previousFileName;
-        uint countGraphs;
-        uint countAnnotation;
-        uint countBurnTimes;
-        double[] maxTime;
-        bool checkBoxWarming;
-        double graphXLeft;
-        double graphXRight;
+        private string fileName;
+        private string previousFileName;
+        private uint countGraphs;
+        private uint countAnnotation;
+        private uint countBurnTimes;
+        private double[] maxTime;
+        private bool checkBoxWarming;
+        private double graphXLeft;
+        private double graphXRight;
         private DataProcessing.DataProcessing data;
-        bool isFileLoaded;
-        bool isGraphDrawn;
-        string graphTitle;
-        readonly bool[] isDeleteGraphs;
-        readonly byte howManyGraphTypes = (byte)Enum.GetValues(typeof(GraphType)).Length;
-        readonly List<object> graphs;
+        private bool isFileLoaded;
+        private bool isGraphDrawn;
+        private string graphTitle;
+        private readonly bool[] isDeleteGraphs;
+        private readonly byte howManyGraphTypes = (byte)Enum.GetValues(typeof(GraphType)).Length;
+        private readonly List<object> graphs;
 
         public Form1()
         {
@@ -676,7 +676,8 @@ namespace MainProcess
                 try
                 {
                     PlotData.Add(((Stack<SignalPlotXY?>)graphs[(byte)GraphType.graphDenoisedVsRaw]).Peek());
-                }catch(InvalidOperationException)
+                }
+                catch (InvalidOperationException)
                 {
                     //グラフを削除した結果全グラフがなくなったときに実行されるコード
                     //グラフが存在しないのにStackでPeek()を実行するとエラーが発生するのを利用している
