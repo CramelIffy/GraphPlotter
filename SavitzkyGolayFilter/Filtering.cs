@@ -62,8 +62,7 @@ namespace DataProcessing
 			try
 			{
 				using StreamReader reader = new(fileName);
-				string data = reader.ReadToEnd();
-				rawData = data.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+				rawData = reader.ReadToEnd().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList();
 			}
 			catch (IOException)
 			{
