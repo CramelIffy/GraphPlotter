@@ -44,7 +44,15 @@ namespace DataProcessing
 			(timeList, thrustList) = ReadCsv(this.fileName, timeColumnNum, dataColumnNum);
 		}
 
-		private (List<double>, List<double>) ReadCsv(string fileName, uint timeColumnNum, uint dataColumnNum)
+        /// <summary>
+        /// Reads a CSV file, converts it to double type and outputs it.
+		/// The first return value is the data in the column specified by timeColumnNum, and the second is the data in the column specified by dataColumnNum.
+        /// </summary>
+        /// <param name="fileName"></param>
+        /// <param name="timeColumnNum"></param>
+        /// <param name="dataColumnNum"></param>
+        /// <returns></returns>
+        private (List<double>, List<double>) ReadCsv(string fileName, uint timeColumnNum, uint dataColumnNum)
 		{
 			var rawData = new List<string>();
 			var timeList = new List<double>();
@@ -60,13 +68,13 @@ namespace DataProcessing
 			catch (IOException)
 			{
 				error = "E003";
-				return (new List<double>(), new List<double>());
+				return (timeList, dataList);
 			}
 			catch (OutOfMemoryException)
 			{
 				error = "E005";
-				return (new List<double>(), new List<double>());
-			}
+                return (timeList, dataList);
+            }
 
 			int length = rawData.Count;
 
@@ -74,7 +82,6 @@ namespace DataProcessing
 
 			var locker = new object();
 
-			var multiFor = new ParallelAssist.ParallelAssist();
 			Parallel.Invoke(() =>
 			{
 				timeList = new List<double>(
