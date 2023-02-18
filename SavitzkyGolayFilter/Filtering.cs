@@ -101,7 +101,7 @@ namespace DataProcessing
 							{
 								return temp;
 							}
-							else if (errorTemp != "E001")
+							else if (errorTemp != "E001" && i != 0)
 								lock (locker) errorTemp = "E001";
 							return double.MinValue;
 						}
@@ -126,7 +126,7 @@ namespace DataProcessing
 							{
 								return temp;
 							}
-							else if (errorTemp != "E001")
+							else if (errorTemp != "E001" && i != 0)
 								lock (locker) errorTemp = "E001";
 							return double.MinValue;
 						}
