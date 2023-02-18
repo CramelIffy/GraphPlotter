@@ -74,7 +74,6 @@ namespace DataProcessing
 
 			var locker = new object();
 
-			var multiFor = new ParallelAssist.ParallelAssist();
 			Parallel.Invoke(() =>
 			{
 				timeList = new List<double>(
