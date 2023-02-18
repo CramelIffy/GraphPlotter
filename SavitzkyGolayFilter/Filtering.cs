@@ -36,7 +36,7 @@ namespace DataProcessing
 			peakProtectedthrustList = new List<double>();
 			error = "E000";
 			fileName = "";
-        }
+		}
 
 		internal void SetFile(string fileName)
 		{
@@ -46,7 +46,8 @@ namespace DataProcessing
 
         /// <summary>
         /// Reads a CSV file, converts it to double type and outputs it.
-		/// The first return value is the data in the column specified by timeColumnNum, and the second is the data in the column specified by dataColumnNum.
+        /// The first return value is the data in the column specified by timeColumnNum, and the second is the data in the column specified by dataColumnNum.
+        /// The minimum value of type double is not available in the CSV file for processing reasons. If it exists, it is deleted.
         /// </summary>
         /// <param name="fileName"></param>
         /// <param name="timeColumnNum"></param>
@@ -62,8 +63,7 @@ namespace DataProcessing
 			try
 			{
 				using StreamReader reader = new(fileName);
-				string data = reader.ReadToEnd();
-				rawData = data.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+				rawData = reader.ReadToEnd().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList();
 			}
 			catch (IOException)
 			{
@@ -73,8 +73,8 @@ namespace DataProcessing
 			catch (OutOfMemoryException)
 			{
 				error = "E005";
-                return (timeList, dataList);
-            }
+				return (timeList, dataList);
+			}
 
 			int length = rawData.Count;
 
@@ -134,7 +134,7 @@ namespace DataProcessing
 				);
 			});
 
-            int howManyDelete = 0;
+			int howManyDelete = 0;
 			for (int i = 0; i < length - howManyDelete; i++)
 			{
 				if (timeList[i] == double.MinValue || dataList[i] == double.MinValue)
@@ -358,7 +358,7 @@ namespace DataProcessing
 				return temp > 0.5 ? 1.0 : Math.Pow(temp * 2, 4) / 16;
 			});
 
-        }
+		}
 
 		internal void SetPeakProtectedThrustList()
 		{
@@ -486,7 +486,7 @@ namespace DataProcessing
 			var result = new List<double>(data);
 
 			temp.Reverse();
-            for (int i = 0; i < range - 1; i++) temp.Add(0.0);
+			for (int i = 0; i < range - 1; i++) temp.Add(0.0);
 			temp.Reverse();
 			Parallel.For(0, temp.Count - (int)range - 1, i =>
 			{
