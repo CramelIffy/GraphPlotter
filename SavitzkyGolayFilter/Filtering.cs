@@ -223,7 +223,6 @@ namespace DataProcessing
 			error = "E010";
 			const int ignitionMargin = 500;
 			const int burnOutMargin = 1000;
-			double offset = 0;
 			double thrustMax = filteredThrustList.Max();
 			double timeMin = this.timeList.Min();
 			this.ignitionTimeIndex = 0;
@@ -249,9 +248,8 @@ namespace DataProcessing
 			{
 				Parallel.Invoke(() =>
 				{
-					double threshold = (thrustMax - offset) * ignitionThreshold + offset;
 					for (int i = 0; i < filteredThrustListTemp.Count; i++) //燃焼開始時間推定
-						if (filteredThrustListTemp[i] > threshold)
+						if (filteredThrustListTemp[i] > thrustMax * ignitionThreshold)
 						{
 							count2++;
 							if (count2 > ignitionMargin)
@@ -268,9 +266,8 @@ namespace DataProcessing
 						}
 				}, () =>
 				{
-					double threshold = (thrustMax - offset) * burnOutThreshold + offset;
 					for (int i = filteredThrustListTemp.Count - 1; i >= 0; i--) //燃焼終了時間推定
-						if (filteredThrustListTemp[i] > threshold)
+						if (filteredThrustListTemp[i] > thrustMax * burnOutThreshold)
 						{
 							count1++;
 							if (count1 > burnOutMargin)
