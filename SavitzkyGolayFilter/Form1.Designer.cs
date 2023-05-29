@@ -84,19 +84,20 @@
             this.formsPlot1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.formsPlot1.Location = new System.Drawing.Point(14, 13);
-            this.formsPlot1.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
+            this.formsPlot1.Location = new System.Drawing.Point(18, 14);
+            this.formsPlot1.Margin = new System.Windows.Forms.Padding(6, 4, 6, 4);
             this.formsPlot1.Name = "formsPlot1";
-            this.formsPlot1.Size = new System.Drawing.Size(1319, 914);
+            this.formsPlot1.Size = new System.Drawing.Size(1696, 960);
             this.formsPlot1.TabIndex = 0;
             // 
             // denoise
             // 
             this.denoise.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.denoise.AutoSize = true;
-            this.denoise.Location = new System.Drawing.Point(1339, 253);
+            this.denoise.Location = new System.Drawing.Point(1724, 266);
+            this.denoise.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.denoise.Name = "denoise";
-            this.denoise.Size = new System.Drawing.Size(85, 24);
+            this.denoise.Size = new System.Drawing.Size(103, 25);
             this.denoise.TabIndex = 1;
             this.denoise.Text = "Denoise";
             this.denoise.UseVisualStyleBackColor = true;
@@ -106,9 +107,10 @@
             // 
             this.showPeakProtectionIntensity.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.showPeakProtectionIntensity.AutoSize = true;
-            this.showPeakProtectionIntensity.Location = new System.Drawing.Point(1305, 342);
+            this.showPeakProtectionIntensity.Location = new System.Drawing.Point(1724, 359);
+            this.showPeakProtectionIntensity.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.showPeakProtectionIntensity.Name = "showPeakProtectionIntensity";
-            this.showPeakProtectionIntensity.Size = new System.Drawing.Size(229, 24);
+            this.showPeakProtectionIntensity.Size = new System.Drawing.Size(294, 25);
             this.showPeakProtectionIntensity.TabIndex = 2;
             this.showPeakProtectionIntensity.Text = "Show PeakProtection Intensity";
             this.toolTip1.SetToolTip(this.showPeakProtectionIntensity, "デノイズによって鈍るピークを保護するためのパラメータです。0のときはデノイズ結果をそのまま表示し、1のときは元データをそのまま表示します。");
@@ -118,9 +120,10 @@
             // plot
             // 
             this.plot.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.plot.Location = new System.Drawing.Point(1298, 866);
+            this.plot.Location = new System.Drawing.Point(1725, 909);
+            this.plot.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.plot.Name = "plot";
-            this.plot.Size = new System.Drawing.Size(229, 29);
+            this.plot.Size = new System.Drawing.Size(286, 30);
             this.plot.TabIndex = 3;
             this.plot.Text = "Plot";
             this.plot.UseVisualStyleBackColor = true;
@@ -129,10 +132,11 @@
             // peakProtectionIntensity
             // 
             this.peakProtectionIntensity.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.peakProtectionIntensity.Location = new System.Drawing.Point(1297, 371);
+            this.peakProtectionIntensity.Location = new System.Drawing.Point(1724, 390);
+            this.peakProtectionIntensity.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.peakProtectionIntensity.Maximum = 40;
             this.peakProtectionIntensity.Name = "peakProtectionIntensity";
-            this.peakProtectionIntensity.Size = new System.Drawing.Size(229, 56);
+            this.peakProtectionIntensity.Size = new System.Drawing.Size(286, 69);
             this.peakProtectionIntensity.TabIndex = 4;
             this.peakProtectionIntensity.Scroll += new System.EventHandler(this.Threshold_Scroll);
             // 
@@ -140,9 +144,10 @@
             // 
             this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(1340, 408);
+            this.label1.Location = new System.Drawing.Point(1778, 428);
+            this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(170, 20);
+            this.label1.Size = new System.Drawing.Size(222, 21);
             this.label1.TabIndex = 5;
             this.label1.Text = "PeakProtectionIntensity: ";
             // 
@@ -151,18 +156,20 @@
             this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label2.AutoSize = true;
             this.label2.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.label2.Location = new System.Drawing.Point(1483, 408);
+            this.label2.Location = new System.Drawing.Point(1957, 428);
+            this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(36, 20);
+            this.label2.Size = new System.Drawing.Size(45, 21);
             this.label2.TabIndex = 6;
             this.label2.Text = "0.00";
             // 
             // selectFile
             // 
             this.selectFile.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.selectFile.Location = new System.Drawing.Point(1298, 728);
+            this.selectFile.Location = new System.Drawing.Point(1725, 764);
+            this.selectFile.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.selectFile.Name = "selectFile";
-            this.selectFile.Size = new System.Drawing.Size(229, 29);
+            this.selectFile.Size = new System.Drawing.Size(286, 30);
             this.selectFile.TabIndex = 7;
             this.selectFile.Text = "Select File";
             this.selectFile.UseVisualStyleBackColor = true;
@@ -171,9 +178,10 @@
             // saveFigure
             // 
             this.saveFigure.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.saveFigure.Location = new System.Drawing.Point(1298, 901);
+            this.saveFigure.Location = new System.Drawing.Point(1725, 946);
+            this.saveFigure.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.saveFigure.Name = "saveFigure";
-            this.saveFigure.Size = new System.Drawing.Size(229, 29);
+            this.saveFigure.Size = new System.Drawing.Size(286, 30);
             this.saveFigure.TabIndex = 8;
             this.saveFigure.Text = "Save Figure";
             this.saveFigure.UseVisualStyleBackColor = true;
@@ -185,9 +193,10 @@
             this.isPlotMax.AutoSize = true;
             this.isPlotMax.Checked = true;
             this.isPlotMax.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.isPlotMax.Location = new System.Drawing.Point(1341, 76);
+            this.isPlotMax.Location = new System.Drawing.Point(1724, 80);
+            this.isPlotMax.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.isPlotMax.Name = "isPlotMax";
-            this.isPlotMax.Size = new System.Drawing.Size(167, 24);
+            this.isPlotMax.Size = new System.Drawing.Size(208, 25);
             this.isPlotMax.TabIndex = 9;
             this.isPlotMax.Text = "Plot Maximum Value";
             this.isPlotMax.UseVisualStyleBackColor = true;
@@ -204,9 +213,10 @@
             // 
             this.isAlignMax.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.isAlignMax.AutoSize = true;
-            this.isAlignMax.Location = new System.Drawing.Point(1296, 224);
+            this.isAlignMax.Location = new System.Drawing.Point(1724, 235);
+            this.isAlignMax.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.isAlignMax.Name = "isAlignMax";
-            this.isAlignMax.Size = new System.Drawing.Size(201, 24);
+            this.isAlignMax.Size = new System.Drawing.Size(248, 25);
             this.isAlignMax.TabIndex = 15;
             this.isAlignMax.Text = "Align the Maximum Value";
             this.toolTip1.SetToolTip(this.isAlignMax, "二つ以上のグラフが描画された時、最大値を揃えます。Set the IgnitionTime to 0 [s]と共存できません。");
@@ -219,9 +229,10 @@
             this.SetIgnitionTimeZero.AutoSize = true;
             this.SetIgnitionTimeZero.Checked = true;
             this.SetIgnitionTimeZero.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.SetIgnitionTimeZero.Location = new System.Drawing.Point(1298, 194);
+            this.SetIgnitionTimeZero.Location = new System.Drawing.Point(1724, 204);
+            this.SetIgnitionTimeZero.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.SetIgnitionTimeZero.Name = "SetIgnitionTimeZero";
-            this.SetIgnitionTimeZero.Size = new System.Drawing.Size(215, 24);
+            this.SetIgnitionTimeZero.Size = new System.Drawing.Size(268, 25);
             this.SetIgnitionTimeZero.TabIndex = 32;
             this.SetIgnitionTimeZero.Text = "Set the IgnitionTime to 0 [s]";
             this.toolTip1.SetToolTip(this.SetIgnitionTimeZero, "燃焼開始時刻を0秒としてグラフを描画します。Align the Maximum Valueと共存できません。");
@@ -234,9 +245,10 @@
             this.DenoisedVsRaw.AutoSize = true;
             this.DenoisedVsRaw.Checked = true;
             this.DenoisedVsRaw.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.DenoisedVsRaw.Location = new System.Drawing.Point(1338, 283);
+            this.DenoisedVsRaw.Location = new System.Drawing.Point(1724, 297);
+            this.DenoisedVsRaw.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.DenoisedVsRaw.Name = "DenoisedVsRaw";
-            this.DenoisedVsRaw.Size = new System.Drawing.Size(143, 24);
+            this.DenoisedVsRaw.Size = new System.Drawing.Size(174, 25);
             this.DenoisedVsRaw.TabIndex = 36;
             this.DenoisedVsRaw.Text = "Denoised vs Raw";
             this.toolTip1.SetToolTip(this.DenoisedVsRaw, "ノイズ除去済みデータと元データを同時に表示します。");
@@ -247,9 +259,10 @@
             // 
             this.dataColumn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.dataColumn.AutoSize = true;
-            this.dataColumn.Location = new System.Drawing.Point(1341, 698);
+            this.dataColumn.Location = new System.Drawing.Point(1724, 732);
+            this.dataColumn.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.dataColumn.Name = "dataColumn";
-            this.dataColumn.Size = new System.Drawing.Size(103, 20);
+            this.dataColumn.Size = new System.Drawing.Size(128, 21);
             this.dataColumn.TabIndex = 10;
             this.dataColumn.Text = "Data Column: ";
             // 
@@ -257,23 +270,25 @@
             // 
             this.timeColumn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.timeColumn.AutoSize = true;
-            this.timeColumn.Location = new System.Drawing.Point(1340, 665);
+            this.timeColumn.Location = new System.Drawing.Point(1724, 697);
+            this.timeColumn.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.timeColumn.Name = "timeColumn";
-            this.timeColumn.Size = new System.Drawing.Size(104, 20);
+            this.timeColumn.Size = new System.Drawing.Size(132, 21);
             this.timeColumn.TabIndex = 11;
             this.timeColumn.Text = "Time Column: ";
             // 
             // dataColumnNum
             // 
             this.dataColumnNum.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.dataColumnNum.Location = new System.Drawing.Point(1408, 695);
+            this.dataColumnNum.Location = new System.Drawing.Point(1863, 730);
+            this.dataColumnNum.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.dataColumnNum.Minimum = new decimal(new int[] {
             1,
             0,
             0,
             0});
             this.dataColumnNum.Name = "dataColumnNum";
-            this.dataColumnNum.Size = new System.Drawing.Size(119, 27);
+            this.dataColumnNum.Size = new System.Drawing.Size(149, 28);
             this.dataColumnNum.TabIndex = 12;
             this.dataColumnNum.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             this.dataColumnNum.Value = new decimal(new int[] {
@@ -285,14 +300,15 @@
             // timeColumnNum
             // 
             this.timeColumnNum.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.timeColumnNum.Location = new System.Drawing.Point(1408, 662);
+            this.timeColumnNum.Location = new System.Drawing.Point(1863, 695);
+            this.timeColumnNum.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.timeColumnNum.Minimum = new decimal(new int[] {
             1,
             0,
             0,
             0});
             this.timeColumnNum.Name = "timeColumnNum";
-            this.timeColumnNum.Size = new System.Drawing.Size(119, 27);
+            this.timeColumnNum.Size = new System.Drawing.Size(149, 28);
             this.timeColumnNum.TabIndex = 13;
             this.timeColumnNum.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             this.timeColumnNum.Value = new decimal(new int[] {
@@ -304,9 +320,10 @@
             // graphInit
             // 
             this.graphInit.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.graphInit.Location = new System.Drawing.Point(1298, 762);
+            this.graphInit.Location = new System.Drawing.Point(1725, 800);
+            this.graphInit.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.graphInit.Name = "graphInit";
-            this.graphInit.Size = new System.Drawing.Size(229, 29);
+            this.graphInit.Size = new System.Drawing.Size(286, 30);
             this.graphInit.TabIndex = 14;
             this.graphInit.Text = "Graph Initialization";
             this.graphInit.UseVisualStyleBackColor = true;
@@ -318,9 +335,10 @@
             this.isPlotImpulse.AutoSize = true;
             this.isPlotImpulse.Checked = true;
             this.isPlotImpulse.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.isPlotImpulse.Location = new System.Drawing.Point(1344, 106);
+            this.isPlotImpulse.Location = new System.Drawing.Point(1724, 111);
+            this.isPlotImpulse.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.isPlotImpulse.Name = "isPlotImpulse";
-            this.isPlotImpulse.Size = new System.Drawing.Size(149, 24);
+            this.isPlotImpulse.Size = new System.Drawing.Size(189, 25);
             this.isPlotImpulse.TabIndex = 16;
             this.isPlotImpulse.Text = "Plot Total Impulse";
             this.isPlotImpulse.UseVisualStyleBackColor = true;
@@ -332,9 +350,10 @@
             this.offsetRemoval.AutoSize = true;
             this.offsetRemoval.Checked = true;
             this.offsetRemoval.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.offsetRemoval.Location = new System.Drawing.Point(1340, 312);
+            this.offsetRemoval.Location = new System.Drawing.Point(1724, 328);
+            this.offsetRemoval.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.offsetRemoval.Name = "offsetRemoval";
-            this.offsetRemoval.Size = new System.Drawing.Size(132, 24);
+            this.offsetRemoval.Size = new System.Drawing.Size(163, 25);
             this.offsetRemoval.TabIndex = 17;
             this.offsetRemoval.Text = "Offset Removal";
             this.offsetRemoval.UseVisualStyleBackColor = true;
@@ -346,9 +365,10 @@
             this.isPlotBurnTime.AutoSize = true;
             this.isPlotBurnTime.Checked = true;
             this.isPlotBurnTime.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.isPlotBurnTime.Location = new System.Drawing.Point(1343, 135);
+            this.isPlotBurnTime.Location = new System.Drawing.Point(1724, 142);
+            this.isPlotBurnTime.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.isPlotBurnTime.Name = "isPlotBurnTime";
-            this.isPlotBurnTime.Size = new System.Drawing.Size(125, 24);
+            this.isPlotBurnTime.Size = new System.Drawing.Size(158, 25);
             this.isPlotBurnTime.TabIndex = 18;
             this.isPlotBurnTime.Text = "Plot Burn time";
             this.isPlotBurnTime.UseVisualStyleBackColor = true;
@@ -356,9 +376,10 @@
             // showReadme
             // 
             this.showReadme.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.showReadme.Location = new System.Drawing.Point(1297, 561);
+            this.showReadme.Location = new System.Drawing.Point(1724, 589);
+            this.showReadme.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.showReadme.Name = "showReadme";
-            this.showReadme.Size = new System.Drawing.Size(229, 29);
+            this.showReadme.Size = new System.Drawing.Size(286, 30);
             this.showReadme.TabIndex = 19;
             this.showReadme.Text = "Readme";
             this.showReadme.UseVisualStyleBackColor = true;
@@ -370,9 +391,10 @@
             this.readAsVol.AutoSize = true;
             this.readAsVol.Checked = true;
             this.readAsVol.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.readAsVol.Location = new System.Drawing.Point(1338, 17);
+            this.readAsVol.Location = new System.Drawing.Point(1724, 18);
+            this.readAsVol.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.readAsVol.Name = "readAsVol";
-            this.readAsVol.Size = new System.Drawing.Size(146, 24);
+            this.readAsVol.Size = new System.Drawing.Size(178, 25);
             this.readAsVol.TabIndex = 20;
             this.readAsVol.Text = "Read as Volutage";
             this.readAsVol.UseVisualStyleBackColor = true;
@@ -384,9 +406,10 @@
             this.readAsMs.AutoSize = true;
             this.readAsMs.Checked = true;
             this.readAsMs.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.readAsMs.Location = new System.Drawing.Point(1338, 47);
+            this.readAsMs.Location = new System.Drawing.Point(1724, 49);
+            this.readAsMs.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.readAsMs.Name = "readAsMs";
-            this.readAsMs.Size = new System.Drawing.Size(163, 24);
+            this.readAsMs.Size = new System.Drawing.Size(199, 25);
             this.readAsMs.TabIndex = 21;
             this.readAsMs.Text = "Read as Millisecond";
             this.readAsMs.UseVisualStyleBackColor = true;
@@ -397,9 +420,10 @@
             this.label3.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label3.AutoSize = true;
             this.label3.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.label3.Location = new System.Drawing.Point(1483, 470);
+            this.label3.Location = new System.Drawing.Point(1957, 493);
+            this.label3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(36, 20);
+            this.label3.Size = new System.Drawing.Size(45, 21);
             this.label3.TabIndex = 24;
             this.label3.Text = "0.05";
             // 
@@ -407,9 +431,10 @@
             // 
             this.label4.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(1340, 470);
+            this.label4.Location = new System.Drawing.Point(1778, 493);
+            this.label4.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(193, 20);
+            this.label4.Size = new System.Drawing.Size(247, 21);
             this.label4.TabIndex = 23;
             this.label4.Text = "IgnitionDetectionThreshold:";
             // 
@@ -417,10 +442,11 @@
             // 
             this.igniThreshold.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.igniThreshold.LargeChange = 10;
-            this.igniThreshold.Location = new System.Drawing.Point(1297, 433);
+            this.igniThreshold.Location = new System.Drawing.Point(1724, 452);
+            this.igniThreshold.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.igniThreshold.Maximum = 100;
             this.igniThreshold.Name = "igniThreshold";
-            this.igniThreshold.Size = new System.Drawing.Size(229, 56);
+            this.igniThreshold.Size = new System.Drawing.Size(286, 69);
             this.igniThreshold.TabIndex = 22;
             this.igniThreshold.Value = 5;
             this.igniThreshold.Scroll += new System.EventHandler(this.IgniThreshold_Scroll);
@@ -430,9 +456,10 @@
             this.label5.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label5.AutoSize = true;
             this.label5.ImageAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.label5.Location = new System.Drawing.Point(1483, 531);
+            this.label5.Location = new System.Drawing.Point(1957, 558);
+            this.label5.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(36, 20);
+            this.label5.Size = new System.Drawing.Size(45, 21);
             this.label5.TabIndex = 27;
             this.label5.Text = "0.05";
             // 
@@ -440,9 +467,10 @@
             // 
             this.label6.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(1340, 531);
+            this.label6.Location = new System.Drawing.Point(1778, 558);
+            this.label6.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(194, 20);
+            this.label6.Size = new System.Drawing.Size(252, 21);
             this.label6.TabIndex = 26;
             this.label6.Text = "BurnoutDetectionThreshold:";
             // 
@@ -450,10 +478,11 @@
             // 
             this.burnoutThreshold.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.burnoutThreshold.LargeChange = 10;
-            this.burnoutThreshold.Location = new System.Drawing.Point(1297, 495);
+            this.burnoutThreshold.Location = new System.Drawing.Point(1724, 517);
+            this.burnoutThreshold.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.burnoutThreshold.Maximum = 100;
             this.burnoutThreshold.Name = "burnoutThreshold";
-            this.burnoutThreshold.Size = new System.Drawing.Size(229, 56);
+            this.burnoutThreshold.Size = new System.Drawing.Size(286, 69);
             this.burnoutThreshold.TabIndex = 25;
             this.burnoutThreshold.Value = 5;
             this.burnoutThreshold.Scroll += new System.EventHandler(this.BurnOutThreshold_Scroll);
@@ -461,28 +490,30 @@
             // skipTime
             // 
             this.skipTime.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.skipTime.Location = new System.Drawing.Point(1408, 596);
+            this.skipTime.Location = new System.Drawing.Point(1863, 626);
+            this.skipTime.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.skipTime.Maximum = new decimal(new int[] {
             1000000,
             0,
             0,
             0});
             this.skipTime.Name = "skipTime";
-            this.skipTime.Size = new System.Drawing.Size(119, 27);
+            this.skipTime.Size = new System.Drawing.Size(149, 28);
             this.skipTime.TabIndex = 31;
             this.skipTime.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
             // cutoffTime
             // 
             this.cutoffTime.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.cutoffTime.Location = new System.Drawing.Point(1408, 630);
+            this.cutoffTime.Location = new System.Drawing.Point(1863, 662);
+            this.cutoffTime.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.cutoffTime.Maximum = new decimal(new int[] {
             1000000,
             0,
             0,
             0});
             this.cutoffTime.Name = "cutoffTime";
-            this.cutoffTime.Size = new System.Drawing.Size(119, 27);
+            this.cutoffTime.Size = new System.Drawing.Size(149, 28);
             this.cutoffTime.TabIndex = 30;
             this.cutoffTime.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
@@ -490,9 +521,10 @@
             // 
             this.label7.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(1340, 598);
+            this.label7.Location = new System.Drawing.Point(1724, 628);
+            this.label7.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label7.Name = "label7";
-            this.label7.Size = new System.Drawing.Size(73, 20);
+            this.label7.Size = new System.Drawing.Size(93, 21);
             this.label7.TabIndex = 29;
             this.label7.Text = "Skip[ms]: ";
             // 
@@ -500,18 +532,20 @@
             // 
             this.label8.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.label8.AutoSize = true;
-            this.label8.Location = new System.Drawing.Point(1341, 632);
+            this.label8.Location = new System.Drawing.Point(1724, 664);
+            this.label8.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(89, 20);
+            this.label8.Size = new System.Drawing.Size(112, 21);
             this.label8.TabIndex = 28;
             this.label8.Text = "Cut off[ms]: ";
             // 
             // GraphScaleInit
             // 
             this.GraphScaleInit.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.GraphScaleInit.Location = new System.Drawing.Point(1298, 797);
+            this.GraphScaleInit.Location = new System.Drawing.Point(1725, 837);
+            this.GraphScaleInit.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.GraphScaleInit.Name = "GraphScaleInit";
-            this.GraphScaleInit.Size = new System.Drawing.Size(229, 29);
+            this.GraphScaleInit.Size = new System.Drawing.Size(286, 30);
             this.GraphScaleInit.TabIndex = 33;
             this.GraphScaleInit.Text = "Graph Scale Initialization";
             this.GraphScaleInit.UseVisualStyleBackColor = true;
@@ -522,16 +556,17 @@
             this.statusStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripStatus});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 930);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 976);
             this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(1539, 26);
+            this.statusStrip1.Padding = new System.Windows.Forms.Padding(1, 0, 18, 0);
+            this.statusStrip1.Size = new System.Drawing.Size(2027, 28);
             this.statusStrip1.TabIndex = 34;
             this.statusStrip1.Text = "statusStrip1";
             // 
             // toolStripStatus
             // 
             this.toolStripStatus.Name = "toolStripStatus";
-            this.toolStripStatus.Size = new System.Drawing.Size(63, 20);
+            this.toolStripStatus.Size = new System.Drawing.Size(80, 21);
             this.toolStripStatus.Text = "Standby";
             this.toolStripStatus.Click += new System.EventHandler(this.ToolStripStatus_Click);
             // 
@@ -539,9 +574,12 @@
             // 
             this.isPlotAverageThrust.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.isPlotAverageThrust.AutoSize = true;
-            this.isPlotAverageThrust.Location = new System.Drawing.Point(1342, 165);
+            this.isPlotAverageThrust.Checked = true;
+            this.isPlotAverageThrust.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.isPlotAverageThrust.Location = new System.Drawing.Point(1724, 173);
+            this.isPlotAverageThrust.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.isPlotAverageThrust.Name = "isPlotAverageThrust";
-            this.isPlotAverageThrust.Size = new System.Drawing.Size(160, 24);
+            this.isPlotAverageThrust.Size = new System.Drawing.Size(200, 25);
             this.isPlotAverageThrust.TabIndex = 35;
             this.isPlotAverageThrust.Text = "Plot Average Thrust";
             this.isPlotAverageThrust.UseVisualStyleBackColor = true;
@@ -550,9 +588,10 @@
             // UndoGraph
             // 
             this.UndoGraph.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.UndoGraph.Location = new System.Drawing.Point(1298, 831);
+            this.UndoGraph.Location = new System.Drawing.Point(1725, 873);
+            this.UndoGraph.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.UndoGraph.Name = "UndoGraph";
-            this.UndoGraph.Size = new System.Drawing.Size(229, 29);
+            this.UndoGraph.Size = new System.Drawing.Size(286, 30);
             this.UndoGraph.TabIndex = 37;
             this.UndoGraph.Text = "Undo Graph";
             this.UndoGraph.UseVisualStyleBackColor = true;
@@ -560,9 +599,9 @@
             // 
             // Form1
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 20F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 21F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1539, 956);
+            this.ClientSize = new System.Drawing.Size(2027, 1004);
             this.Controls.Add(this.UndoGraph);
             this.Controls.Add(this.DenoisedVsRaw);
             this.Controls.Add(this.isPlotAverageThrust);
@@ -602,7 +641,8 @@
             this.Controls.Add(this.denoise);
             this.Controls.Add(this.formsPlot1);
             this.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.MinimumSize = new System.Drawing.Size(1538, 972);
+            this.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            this.MinimumSize = new System.Drawing.Size(1917, 1018);
             this.Name = "Form1";
             this.Text = "GraphPlotter";
             this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
