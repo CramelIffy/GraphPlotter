@@ -299,7 +299,7 @@ namespace MainProcess
                 ((Stack<Annotation?>)graphs[(byte)GraphType.impulseAno]).Push(null);
             }
 
-            var graphColor = Color.FromArgb(255, (int)(30 + countGraphs * 120) % 192, (int)(40 + countGraphs * 160) % 192, (int)(50 + countGraphs * 200) % 192);
+            var graphColor = Color.FromArgb(255, Math.Abs((int)(30 + countGraphs * 120) % 192 - 64), Math.Abs((int)(40 + countGraphs * 160) % 192 - 64), Math.Abs((int)(50 + countGraphs * 200) % 192 - 64));
 
             if (!showPeakProtectionIntensity.Checked)
             {
