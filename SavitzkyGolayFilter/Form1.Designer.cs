@@ -490,12 +490,13 @@
             // skipTime
             // 
             this.skipTime.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.skipTime.DecimalPlaces = 3;
             this.skipTime.Location = new System.Drawing.Point(1863, 626);
             this.skipTime.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.skipTime.Maximum = new decimal(new int[] {
-            1000000,
-            0,
-            0,
+            -1,
+            -1,
+            -1,
             0});
             this.skipTime.Name = "skipTime";
             this.skipTime.Size = new System.Drawing.Size(149, 28);
@@ -505,12 +506,13 @@
             // cutoffTime
             // 
             this.cutoffTime.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.cutoffTime.DecimalPlaces = 3;
             this.cutoffTime.Location = new System.Drawing.Point(1863, 662);
             this.cutoffTime.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.cutoffTime.Maximum = new decimal(new int[] {
-            1000000,
-            0,
-            0,
+            -1,
+            -1,
+            -1,
             0});
             this.cutoffTime.Name = "cutoffTime";
             this.cutoffTime.Size = new System.Drawing.Size(149, 28);

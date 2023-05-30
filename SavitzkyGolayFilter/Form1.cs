@@ -157,6 +157,11 @@ namespace MainProcess
                         Application.DoEvents();
                         graphInit.PerformClick();
                         return;
+                    case "E006":
+                        MessageBox.Show("データエラー\n極端に大きい、または負の値が存在します。\nこれらの値は自動で削除されます。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        toolStripStatus.Text = "ERROR";
+                        Application.DoEvents();
+                        break;
                 }
 
                 toolStripStatus.Text = "The file has been loaded.";
@@ -173,6 +178,13 @@ namespace MainProcess
             Application.DoEvents();
 
             data.CheckTimeData(fileName != previousFileName);
+            switch (data.error)
+            {
+                case "E007":
+                    MessageBox.Show("データエラー\n負の時間データが存在します。\nこれらの値は自動で削除されます。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    Application.DoEvents();
+                    break;
+            }
 
             do
             {
@@ -193,7 +205,6 @@ namespace MainProcess
 
                     data.offset = 0;
                 }
-
 
                 toolStripStatus.Text = "Burn time estimating";
                 Application.DoEvents();
@@ -481,6 +492,11 @@ namespace MainProcess
                         toolStripStatus.Text = "ERROR";
                         Application.DoEvents();
                         graphInit.PerformClick();
+                        return;
+                    case "E006":
+                        MessageBox.Show("データエラー\n負の時間が発生しています。", "エラー", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        toolStripStatus.Text = "ERROR";
+                        Application.DoEvents();
                         return;
                 }
 
