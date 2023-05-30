@@ -144,7 +144,7 @@
             // 
             this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(1778, 428);
+            this.label1.Location = new System.Drawing.Point(1724, 428);
             this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(222, 21);
@@ -431,12 +431,12 @@
             // 
             this.label4.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(1778, 493);
+            this.label4.Location = new System.Drawing.Point(1724, 493);
             this.label4.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(247, 21);
+            this.label4.Size = new System.Drawing.Size(165, 21);
             this.label4.TabIndex = 23;
-            this.label4.Text = "IgnitionDetectionThreshold:";
+            this.label4.Text = "IgnitionThreshold:";
             // 
             // igniThreshold
             // 
@@ -467,12 +467,12 @@
             // 
             this.label6.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(1778, 558);
+            this.label6.Location = new System.Drawing.Point(1728, 558);
             this.label6.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(252, 21);
+            this.label6.Size = new System.Drawing.Size(170, 21);
             this.label6.TabIndex = 26;
-            this.label6.Text = "BurnoutDetectionThreshold:";
+            this.label6.Text = "BurnoutThreshold:";
             // 
             // burnoutThreshold
             // 
