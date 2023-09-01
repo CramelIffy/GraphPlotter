@@ -322,6 +322,7 @@ namespace MainProcess
                     var graphDenoisedVsRaw = formsPlot1.Plot.AddSignalXY(data.timeList.ToArray(), unfilteredThrustList.ToArray(), label: graphTitle + "(original)");
                     graphDenoisedVsRaw.LineWidth = 3;
                     graphDenoisedVsRaw.LineColor = Color.FromArgb(90, graphColor);
+                    graphDenoisedVsRaw.MarkerColor = Color.FromArgb(90, graphColor);
 
                     ((Stack<SignalPlotXY?>)graphs[(byte)GraphType.graphDenoisedVsRaw]).Push(graphDenoisedVsRaw);
                 }
@@ -332,6 +333,7 @@ namespace MainProcess
                 var graph = formsPlot1.Plot.AddSignalXY(data.timeList.ToArray(), data.thrustList.ToArray(), label: graphTitle + (DenoisedVsRaw.Checked ? "(denoised)" : ""));
                 graph.LineWidth = 2;
                 graph.LineColor = graphColor;
+                graph.MarkerColor = graphColor;
 
                 ((Stack<SignalPlotXY?>)graphs[(byte)GraphType.graph]).Push(graph);
                 ((Stack<SignalPlotXY?>)graphs[(byte)GraphType.peakProtectionIntensityGraph]).Push(null);
