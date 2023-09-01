@@ -267,13 +267,13 @@ namespace DataProcessing
             {
                 Parallel.Invoke(() =>
                 {
-                    for (int i = 0; i < filteredThrustListTemp.Count; i++) //燃焼開始時間推定
-                        if (filteredThrustListTemp[i] > thrustMax * ignitionThreshold)
+                    for (int i = filteredThrustListTemp.IndexOf(thrustMax); i >= 0; i--) //燃焼開始時間推定
+                        if (filteredThrustListTemp[i] < thrustMax * ignitionThreshold)
                         {
                             count2++;
                             if (count2 > ignitionMargin)
                             {
-                                ignitionTimeIndex = i - ignitionMargin;
+                                ignitionTimeIndex = i + ignitionMargin;
                                 estimatedResults[0] = true;
                                 break;
                             }
@@ -285,13 +285,13 @@ namespace DataProcessing
                         }
                 }, () =>
                 {
-                    for (int i = filteredThrustListTemp.Count - 1; i >= 0; i--) //燃焼終了時間推定
-                        if (filteredThrustListTemp[i] > thrustMax * burnOutThreshold)
+                    for (int i = filteredThrustListTemp.IndexOf(thrustMax); i < filteredThrustListTemp.Count; i++) //燃焼終了時間推定
+                        if (filteredThrustListTemp[i] < thrustMax * burnOutThreshold)
                         {
                             count1++;
                             if (count1 > burnOutMargin)
                             {
-                                burnOutTimeIndex = i + burnOutMargin;
+                                burnOutTimeIndex = i - burnOutMargin;
                                 estimatedResults[1] = true;
                                 break;
                             }
